@@ -4,6 +4,7 @@ struct GalleryView: View {
     var photos: [UIImage]  // Pass the photos array from ContentView
     @Binding var isFullScreen: Bool
     @Binding var selectedPhoto: UIImage?
+    @State private var selectedIndex: Int = 0
 
     var body: some View {
         VStack {
@@ -30,6 +31,10 @@ struct GalleryView: View {
             }
             
             Spacer()
+            NavigationLink(destination: GalleryDetailView(photos: photos, selectedIndex: $selectedIndex), isActive: $isFullScreen) {
+                EmptyView()
+            }
+
         }
         .navigationBarTitle("Gallery", displayMode: .inline)
         .onAppear {
