@@ -1,6 +1,12 @@
 import SwiftUI
 import Photos
 
+struct FaceData: Identifiable {
+    let id: UUID
+    var expression: String
+    var lastSeen: Date
+}
+
 struct ContentView: View {
     @StateObject var cameraService = CameraService()
     @State private var lastPhoto: UIImage?
@@ -9,19 +15,32 @@ struct ContentView: View {
     @State private var isFullScreen: Bool = false
     @State private var selectedPhoto: UIImage?
     
+    @State private var faces: [FaceData] = []
+    @State private var faceID: UUID = UUID()
+    @StateObject var arViewModel = ARViewModel()
+    
+    
     var body: some View {
         NavigationView {
             ZStack {
                 // Camera Preview
-                CameraPreview(session: cameraService.session)
-                    .ignoresSafeArea()
+//                CameraPreview(session: cameraService.session)
+//                    .ignoresSafeArea()
+                
+                ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel)
+                    .edgesIgnoringSafeArea(.all)
                 
                 VStack {
                     Spacer()
-                    
+                    List(faces) { face in
+                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
+                    }
+                    .frame(maxHeight: 200)
                     // Photo preview or placeholder
                     HStack {
-                        NavigationLink(destination: GalleryView(photos: photos, isFullScreen: $isFullScreen, selectedPhoto: $selectedPhoto)) {
+                        NavigationLink(
+                            destination: GalleryView(isFullScreen: $isFullScreen, selectedPhoto: $selectedPhoto)
+                        ) {
                             if let image = lastPhoto {
                                 Image(uiImage: image)
                                     .resizable()
@@ -42,12 +61,23 @@ struct ContentView: View {
                         
                         // Capture Button
                         Button(action: {
-                            cameraService.capturePhoto { image in
+//                            arViewModel.captureSnapshot()
+                            arViewModel.captureSnapshot { image in
+                                
                                 if let img = image {
+                                    print("Got image from ARView snapshot")
                                     lastPhoto = img
-                                    savePhotoToAlbum(img)  // Save the image to a specific album with metadata
+                                    savePhotoToAlbum(img)
+                                } else {
+                                    print("No image captured")
                                 }
                             }
+//                            cameraService.capturePhoto { image in
+//                                if let img = image {
+//                                    lastPhoto = img
+//                                    savePhotoToAlbum(img)  // Save the image to a specific album with metadata
+//                                }
+//                            }
                         }) {
                             Circle()
                                 .fill(Color.white)
@@ -74,8 +104,9 @@ struct ContentView: View {
                 }
             }
             .onAppear {
-                cameraService.configure()
+//                cameraService.configure()
                 loadPhotos()
+                arViewModel.restartSession()
             }
         }
     }
