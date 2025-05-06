@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var photos: [UIImage] = []
     @State private var isFullScreen: Bool = false
     @State private var selectedPhoto: UIImage?
+    @State private var photoAssets: [PHAsset] = []
     
     var body: some View {
         NavigationView {
@@ -21,7 +22,7 @@ struct ContentView: View {
                     
                     // Photo preview or placeholder
                     HStack {
-                        NavigationLink(destination: GalleryView(photos: photos, isFullScreen: $isFullScreen, selectedPhoto: $selectedPhoto)) {
+                        NavigationLink(destination: GalleryView(photos: photos, photoAssets: $photoAssets, isFullScreen: $isFullScreen, selectedPhoto: $selectedPhoto)) {
                             if let image = lastPhoto {
                                 Image(uiImage: image)
                                     .resizable()
@@ -213,6 +214,7 @@ struct ContentView: View {
     func loadPhotos() {
         let albumName = "Apple Academy Challenge 2"
         var photoArray: [UIImage] = []
+        var assetArray: [PHAsset] = []
 
         PHPhotoLibrary.requestAuthorization { status in
             if status == .authorized {
@@ -230,6 +232,7 @@ struct ContentView: View {
                             imageManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFill, options: options) { image, _ in
                                 if let image = image {
                                     photoArray.append(image)
+                                    assetArray.append(asset)
                                 }
                             }
                         }
@@ -238,6 +241,7 @@ struct ContentView: View {
                 
                 DispatchQueue.main.async {
                     self.photos = photoArray
+                    self.photoAssets = assetArray
                 }
             }
         }

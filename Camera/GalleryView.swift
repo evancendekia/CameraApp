@@ -1,7 +1,9 @@
 import SwiftUI
+import Photos
 
 struct GalleryView: View {
-    var photos: [UIImage]  // Pass the photos array from ContentView
+    @State var photos: [UIImage]  // Pass the photos array from ContentView
+    @Binding var photoAssets: [PHAsset]
     @Binding var isFullScreen: Bool
     @Binding var selectedPhoto: UIImage?
     @State private var selectedIndex: Int = 0
@@ -31,7 +33,7 @@ struct GalleryView: View {
             }
             
             Spacer()
-            NavigationLink(destination: GalleryDetailView(photos: photos, selectedIndex: $selectedIndex), isActive: $isFullScreen) {
+            NavigationLink(destination: GalleryDetailView(photoAssets: $photoAssets, photos: $photos, selectedIndex: $selectedIndex), isActive: $isFullScreen) {
                 EmptyView()
             }
 
