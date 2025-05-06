@@ -1,7 +1,7 @@
 import SwiftUI
 import Photos
 
-struct FaceData: Identifiable {
+struct FaceData: Identifiable, Equatable {
     let id: UUID
     var expression: String
     var lastSeen: Date
@@ -19,6 +19,10 @@ struct ContentView: View {
     @State private var faces: [FaceData] = []
     @State private var faceID: UUID = UUID()
     @StateObject var arViewModel = ARViewModel()
+    @State private var numberOfFaces: Int = 0
+    @State private var numberOfSmiling: Int = 0
+    @State private var lastCaptureTime: Date = .distantPast
+    @State private var showFlash = false
     
     
     var body: some View {
@@ -29,11 +33,22 @@ struct ContentView: View {
 //                    .ignoresSafeArea()
                 
                 ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel)
+                    .aspectRatio(3/4, contentMode: .fit)
+                    .clipped()
                     .edgesIgnoringSafeArea(.all)
                 
+                Color.black
+                    .opacity(showFlash ? 1 : 0)
+                    .ignoresSafeArea()
+                    .animation(.easeOut(duration: 0.2), value: showFlash)
                 VStack {
                     Spacer()
-                    
+//                    Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
+//                    Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
+//                    List(faces) { face in
+//                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
+//                    }
+//                    .frame(maxHeight: 200)
                     // Photo preview or placeholder
                     HStack {
                         NavigationLink(destination: GalleryView(photos: photos, photoAssets: $photoAssets, isFullScreen: $isFullScreen, selectedPhoto: $selectedPhoto)) {
@@ -60,9 +75,15 @@ struct ContentView: View {
 //                            arViewModel.captureSnapshot()
                             arViewModel.captureSnapshot { image in
                                 
+                                showFlash = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    showFlash = false
+                                }
                                 if let img = image {
+                                    let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
+                                    lastPhoto = croppedImage
                                     print("Got image from ARView snapshot")
-                                    lastPhoto = img
+//                                    lastPhoto = img
                                     savePhotoToAlbum(img)
                                 } else {
                                     print("No image captured")
@@ -103,6 +124,36 @@ struct ContentView: View {
 //                cameraService.configure()
                 loadPhotos()
                 arViewModel.restartSession()
+                Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+                    let now = Date()
+                    faces.removeAll { face in
+                        now.timeIntervalSince(face.lastSeen) > 0.5
+                    }
+                }
+            }
+            .onChange(of: faces) { newFaces in
+                numberOfFaces = newFaces.count
+                numberOfSmiling = newFaces.filter { $0.expression.lowercased().contains("smiling") }.count
+                
+                let now = Date()
+                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
+                    
+                    lastCaptureTime = now
+                    arViewModel.captureSnapshot { image in
+                        
+                        showFlash = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            showFlash = false
+                        }
+                        if let img = image {
+                            print("Got image from ARView snapshot")
+                            lastPhoto = img
+                            savePhotoToAlbum(img)
+                        } else {
+                            print("No image captured")
+                        }
+                    }
+                }
             }
         }
     }
@@ -264,12 +315,33 @@ struct ContentView: View {
                         }
                     }
                 }
-                
                 DispatchQueue.main.async {
                     self.photos = photoArray
                     self.photoAssets = assetArray
                 }
             }
         }
+    }
+    func cropToAspectRatio(image: UIImage, aspectRatio: CGSize) -> UIImage {
+        let originalSize = image.size
+        let originalRatio = originalSize.width / originalSize.height
+        let targetRatio = aspectRatio.width / aspectRatio.height
+        
+        var cropRect = CGRect.zero
+        
+        if originalRatio > targetRatio {
+            // Too wide, crop sides
+            let newWidth = originalSize.height * targetRatio
+            let x = (originalSize.width - newWidth) / 2
+            cropRect = CGRect(x: x, y: 0, width: newWidth, height: originalSize.height)
+        } else {
+            // Too tall, crop top and bottom
+            let newHeight = originalSize.width / targetRatio
+            let y = (originalSize.height - newHeight) / 2
+            cropRect = CGRect(x: 0, y: y, width: originalSize.width, height: newHeight)
+        }
+        
+        guard let cgImage = image.cgImage?.cropping(to: cropRect) else { return image }
+        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
     }
 }

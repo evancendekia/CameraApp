@@ -267,16 +267,38 @@ struct ARViewContainer: UIViewRepresentable {
     func updateUIView(_ uiView: ARView, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+        Coordinator(self, faces: $faces, faceID: $faceID)
     }
 
     class Coordinator: NSObject, ARSessionDelegate {
         var parent: ARViewContainer
+        private var cleanupTimer: Timer?
+        @Binding var faces: [FaceData]
+        @Binding var faceID: UUID
 
-        init(_ parent: ARViewContainer) {
+        init(_ parent: ARViewContainer,faces: Binding<[FaceData]>, faceID: Binding<UUID>) {
+            _faces = faces
+            _faceID = faceID
             self.parent = parent
+            super.init()
+            startCleanupTimer()
         }
 
+
+        private func startCleanupTimer() {
+            cleanupTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+                self?.removeStaleFaces()
+            }
+        }
+
+        private func removeStaleFaces() {
+            let now = Date()
+//            let timeout: TimeInterval = 2.0 // Waktu dalam detik
+            let timeout: TimeInterval = 0.2 // Waktu dalam detik
+            DispatchQueue.main.async {
+                self.faces.removeAll { now.timeIntervalSince($0.lastSeen) > timeout }
+            }
+        }
         func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
             for anchor in anchors {
                 guard let faceAnchor = anchor as? ARFaceAnchor else { continue }
@@ -284,7 +306,7 @@ struct ARViewContainer: UIViewRepresentable {
                 let smileLeft = faceAnchor.blendShapes[.mouthSmileLeft]?.floatValue ?? 0.0
                 let smileRight = faceAnchor.blendShapes[.mouthSmileRight]?.floatValue ?? 0.0
                 let isSmiling = (smileLeft + smileRight) / 2.0 > 0.5
-                let expression = isSmiling ? "Smiling 😄" : "Neutral 😐"
+                let expression = isSmiling ? "Smiling" : "Neutral"
 
                 DispatchQueue.main.async {
                     let faceUUID = anchor.identifier
