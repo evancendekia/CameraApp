@@ -2,6 +2,8 @@ import SwiftUI
 import Photos
 
 struct GalleryView: View {
+    @State var photos: [UIImage]  // Pass the photos array from ContentView
+    @Binding var photoAssets: [PHAsset]
     @Binding var isFullScreen: Bool
     @Binding var selectedPhoto: UIImage?
     @State private var currentPhotos: [UIImage] = []
@@ -33,14 +35,9 @@ struct GalleryView: View {
                 }
                 .padding()
             }
-
+            
             Spacer()
-
-            // Full screen detail view navigation
-            NavigationLink(
-                destination: GalleryDetailView(photos: currentPhotos, selectedIndex: $selectedIndex),
-                isActive: $isFullScreen
-            ) {
+            NavigationLink(destination: GalleryDetailView(photoAssets: $photoAssets, photos: $photos, selectedIndex: $selectedIndex), isActive: $isFullScreen) {
                 EmptyView()
             }
         }
