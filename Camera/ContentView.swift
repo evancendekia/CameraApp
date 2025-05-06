@@ -51,21 +51,39 @@ struct ContentView: View {
 //                    .frame(maxHeight: 200)
                     // Photo preview or placeholder
                     HStack {
-                        NavigationLink(destination: GalleryView(photos: photos, photoAssets: $photoAssets, isFullScreen: $isFullScreen, selectedPhoto: $selectedPhoto)) {
-                            if let image = lastPhoto {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .padding(.leading)
-                            } else {
-                                Rectangle()
-                                    .fill(Color.gray)
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .padding(.leading)
-                            }
+//                        NavigationLink(destination: GalleryView(photos: photos, photoAssets: $photoAssets, isFullScreen: $isFullScreen, selectedPhoto: $selectedPhoto)) {
+//                            if let image = lastPhoto {
+//                                Image(uiImage: image)
+//                                    .resizable()
+//                                    .scaledToFill()
+//                                    .frame(width: 60, height: 60)
+//                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+//                                    .padding(.leading)
+//                            } else {
+//                                Rectangle()
+//                                    .fill(Color.gray)
+//                                    .frame(width: 60, height: 60)
+//                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+//                                    .padding(.leading)
+//                            }
+//                        }
+                        Button {
+                           showingGallery = true
+                        } label: {
+                           if let image = lastPhoto {
+                               Image(uiImage: image)
+                                   .resizable()
+                                   .scaledToFill()
+                                   .frame(width: 60, height: 60)
+                                   .clipShape(RoundedRectangle(cornerRadius: 10))
+                                   .padding(.leading)
+                           } else {
+                               Rectangle()
+                                   .fill(Color.gray)
+                                   .frame(width: 60, height: 60)
+                                   .clipShape(RoundedRectangle(cornerRadius: 10))
+                                   .padding(.leading)
+                           }
                         }
 
                         Spacer()
@@ -84,7 +102,8 @@ struct ContentView: View {
                                     lastPhoto = croppedImage
                                     print("Got image from ARView snapshot")
 //                                    lastPhoto = img
-                                    savePhotoToAlbum(img)
+//                                    savePhotoToAlbum(img)
+                                    savePhotoToAppStorage(croppedImage)
                                 } else {
                                     print("No image captured")
                                 }
@@ -120,15 +139,28 @@ struct ContentView: View {
                     .padding(.bottom, 30)
                 }
             }
+            .navigationDestination(isPresented: $showingGallery) {
+                GalleryView(
+                    photos: photos,
+                    photoAssets: $photoAssets,
+                    isFullScreen: $isFullScreen,
+                    selectedPhoto: $selectedPhoto
+                )
+            }
             .onAppear {
 //                cameraService.configure()
-                loadPhotos()
+//                loadPhotos()
                 arViewModel.restartSession()
                 Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
                     let now = Date()
                     faces.removeAll { face in
                         now.timeIntervalSince(face.lastSeen) > 0.5
                     }
+                }
+            }
+            .onChange(of: showingGallery) { newValue in
+                if newValue == false {
+//                    loadPhotos() 
                 }
             }
             .onChange(of: faces) { newFaces in
@@ -146,9 +178,13 @@ struct ContentView: View {
                             showFlash = false
                         }
                         if let img = image {
-                            print("Got image from ARView snapshot")
-                            lastPhoto = img
-                            savePhotoToAlbum(img)
+//                            print("Got image from ARView snapshot")
+//                            lastPhoto = img
+                            
+                            let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
+                            lastPhoto = croppedImage
+//                            savePhotoToAlbum(img)
+                            savePhotoToAppStorage(croppedImage)
                         } else {
                             print("No image captured")
                         }
@@ -158,10 +194,28 @@ struct ContentView: View {
         }
     }
     
+    func savePhotoToAppStorage(_ image: UIImage) {
+        let fileManager = FileManager.default
+        guard let data = image.jpegData(compressionQuality: 0.95) else { return }
+
+        let filename = UUID().uuidString + ".jpg"
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let fileURL = documentsURL.appendingPathComponent(filename)
+
+        do {
+            try data.write(to: fileURL)
+            print("✅ Saved to: \(fileURL.lastPathComponent)")
+            DispatchQueue.main.async {
+                self.photos.insert(image, at: 0)
+            }
+        } catch {
+            print("❌ Error saving image: \(error.localizedDescription)")
+        }
+    }
+    
     // Function to save the photo to a custom album with metadata
     func savePhotoToAlbum(_ image: UIImage) {
-        let albumName = "Apple Academy Challenge 2"
-
+        let albumName = "Apple Academy Challenge 2 "
         PHPhotoLibrary.requestAuthorization { status in
             if status == .authorized {
                 var album: PHAssetCollection?
@@ -288,40 +342,41 @@ struct ContentView: View {
     }
 
     // Function to load photos from the album
-    func loadPhotos() {
-        let albumName = "Apple Academy Challenge 2"
-        var photoArray: [UIImage] = []
-        var assetArray: [PHAsset] = []
-
-        PHPhotoLibrary.requestAuthorization { status in
-            if status == .authorized {
-                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
-                
-                collections.enumerateObjects { collection, _, _ in
-                    if collection.localizedTitle == albumName {
-                        let assets = PHAsset.fetchAssets(in: collection, options: nil)
-                        
-                        assets.enumerateObjects { asset, _, _ in
-                            let imageManager = PHImageManager.default()
-                            let options = PHImageRequestOptions()
-                            options.isSynchronous = true
-                            
-                            imageManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFill, options: options) { image, _ in
-                                if let image = image {
-                                    photoArray.append(image)
-                                    assetArray.append(asset)
-                                }
-                            }
-                        }
-                    }
-                }
-                DispatchQueue.main.async {
-                    self.photos = photoArray
-                    self.photoAssets = assetArray
-                }
-            }
-        }
-    }
+//    func loadPhotos() {
+//        let albumName = "Apple Academy Challenge 2"
+//        var photoArray: [UIImage] = []
+//        var assetArray: [PHAsset] = []
+//
+//        PHPhotoLibrary.requestAuthorization { status in
+//            if status == .authorized {
+//                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
+//                
+//                collections.enumerateObjects { collection, _, _ in
+//                    if collection.localizedTitle == albumName {
+//                        let assets = PHAsset.fetchAssets(in: collection, options: nil)
+//                        
+//                        assets.enumerateObjects { asset, _, _ in
+//                            let imageManager = PHImageManager.default()
+//                            let options = PHImageRequestOptions()
+//                            options.isSynchronous = true
+//                            
+//                            imageManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFill, options: options) { image, _ in
+//                                if let image = image {
+//                                    photoArray.append(image)
+//                                    assetArray.append(asset)
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//                DispatchQueue.main.async {
+//                    self.photos = photoArray
+//                    self.photoAssets = assetArray
+//                }
+//            }
+//        }
+//    }
+    
     func cropToAspectRatio(image: UIImage, aspectRatio: CGSize) -> UIImage {
         let originalSize = image.size
         let originalRatio = originalSize.width / originalSize.height

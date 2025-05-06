@@ -8,6 +8,7 @@ struct GalleryView: View {
     @Binding var selectedPhoto: UIImage?
     @State private var currentPhotos: [UIImage] = []
     @State private var selectedIndex: Int = 0
+    @State private var imageFileURLs: [URL] = []
 
     var body: some View {
         VStack {
@@ -18,7 +19,7 @@ struct GalleryView: View {
             // Gallery of Thumbnails
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                    ForEach(currentPhotos, id: \.self) { photo in
+                    ForEach(photos, id: \.self) { photo in
                         Image(uiImage: photo)
                             .resizable()
                             .scaledToFill()
@@ -26,7 +27,7 @@ struct GalleryView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .onTapGesture {
                                 selectedPhoto = photo
-                                if let index = currentPhotos.firstIndex(of: photo) {
+                                if let index = photos.firstIndex(of: photo) {
                                     selectedIndex = index
                                 }
                                 isFullScreen = true
@@ -37,19 +38,60 @@ struct GalleryView: View {
             }
             
             Spacer()
-            NavigationLink(destination: GalleryDetailView(photoAssets: $photoAssets, photos: $photos, selectedIndex: $selectedIndex), isActive: $isFullScreen) {
-                EmptyView()
+//            NavigationLink(destination: GalleryDetailView(photoAssets: $photoAssets, photos: $photos, selectedIndex: $selectedIndex), isActive: $isFullScreen) {
+//                EmptyView()
+//            }
+            .navigationDestination(isPresented: $isFullScreen) {
+                GalleryDetailView(photoAssets: $photoAssets,
+                                  photos: $photos,
+                                  selectedIndex: $selectedIndex)
             }
         }
         .navigationBarTitle("Gallery", displayMode: .inline)
         .onAppear {
+            if photos.isEmpty {
+                loadPhotos() // Only load if not already loaded
+            }
             isFullScreen = false
-            loadPhotos()
         }
     }
 
-    // Load latest photos from custom album
     private func loadPhotos() {
+        loadPhotosFromInternalStorage() // Load images from internal storage
+//        loadPhotosFromPhotoLibrary() // Load images from Photos app
+    }
+
+    private func loadPhotosFromInternalStorage() {
+        let fileManager = FileManager.default
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+
+        do {
+            let urls = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
+                .filter { $0.pathExtension.lowercased() == "jpg" || $0.pathExtension.lowercased() == "png" }
+                .sorted { $0.lastPathComponent > $1.lastPathComponent } // Newest first
+
+            self.imageFileURLs = urls
+            loadImagesFromFileURLs(urls)
+        } catch {
+            print("Error loading images from internal storage: \(error.localizedDescription)")
+        }
+    }
+
+    private func loadImagesFromFileURLs(_ urls: [URL]) {
+        var loadedPhotos: [UIImage] = []
+        
+        for url in urls {
+            if let image = UIImage(contentsOfFile: url.path) {
+                loadedPhotos.append(image)
+            }
+        }
+
+        DispatchQueue.main.async {
+            self.photos.append(contentsOf: loadedPhotos.reversed())
+        }
+    }
+
+    private func loadPhotosFromPhotoLibrary() {
         let albumName = "Apple Academy Challenge 2"
         var loadedPhotos: [UIImage] = []
 
@@ -74,7 +116,7 @@ struct GalleryView: View {
                 }
 
                 DispatchQueue.main.async {
-                    self.currentPhotos = loadedPhotos.reversed() // newest first
+                    self.photos.append(contentsOf: loadedPhotos.reversed()) // Newest first
                 }
             }
         }
