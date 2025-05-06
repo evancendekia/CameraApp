@@ -31,11 +31,16 @@ struct ContentView: View {
                 // Camera Preview
 //                CameraPreview(session: cameraService.session)
 //                    .ignoresSafeArea()
-                
-                ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel)
-                    .aspectRatio(3/4, contentMode: .fit)
-                    .clipped()
-                    .edgesIgnoringSafeArea(.all)
+                VStack{
+                    Spacer()
+                    ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel)
+                        .aspectRatio(3/4, contentMode: .fit)
+                        .clipped()
+                        .edgesIgnoringSafeArea(.all)
+                    Spacer()
+                    Spacer()
+                    Spacer()
+                }
                 
                 Color.black
                     .opacity(showFlash ? 1 : 0)
@@ -49,24 +54,7 @@ struct ContentView: View {
 //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
 //                    }
 //                    .frame(maxHeight: 200)
-                    // Photo preview or placeholder
                     HStack {
-//                        NavigationLink(destination: GalleryView(photos: photos, photoAssets: $photoAssets, isFullScreen: $isFullScreen, selectedPhoto: $selectedPhoto)) {
-//                            if let image = lastPhoto {
-//                                Image(uiImage: image)
-//                                    .resizable()
-//                                    .scaledToFill()
-//                                    .frame(width: 60, height: 60)
-//                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-//                                    .padding(.leading)
-//                            } else {
-//                                Rectangle()
-//                                    .fill(Color.gray)
-//                                    .frame(width: 60, height: 60)
-//                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-//                                    .padding(.leading)
-//                            }
-//                        }
                         Button {
                            showingGallery = true
                         } label: {
@@ -88,9 +76,7 @@ struct ContentView: View {
 
                         Spacer()
                         
-                        // Capture Button
                         Button(action: {
-//                            arViewModel.captureSnapshot()
                             arViewModel.captureSnapshot { image in
                                 
                                 showFlash = true
@@ -100,20 +86,11 @@ struct ContentView: View {
                                 if let img = image {
                                     let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
                                     lastPhoto = croppedImage
-                                    print("Got image from ARView snapshot")
-//                                    lastPhoto = img
-//                                    savePhotoToAlbum(img)
                                     savePhotoToAppStorage(croppedImage)
                                 } else {
                                     print("No image captured")
                                 }
                             }
-//                            cameraService.capturePhoto { image in
-//                                if let img = image {
-//                                    lastPhoto = img
-//                                    savePhotoToAlbum(img)  // Save the image to a specific album with metadata
-//                                }
-//                            }
                         }) {
                             Circle()
                                 .fill(Color.white)
@@ -148,8 +125,6 @@ struct ContentView: View {
                 )
             }
             .onAppear {
-//                cameraService.configure()
-//                loadPhotos()
                 arViewModel.restartSession()
                 Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
                     let now = Date()
@@ -168,7 +143,8 @@ struct ContentView: View {
                 numberOfSmiling = newFaces.filter { $0.expression.lowercased().contains("smiling") }.count
                 
                 let now = Date()
-                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
+//                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
+                if numberOfFaces == numberOfSmiling && now.timeIntervalSince(lastCaptureTime) > 1 {
                     
                     lastCaptureTime = now
                     arViewModel.captureSnapshot { image in
@@ -178,12 +154,8 @@ struct ContentView: View {
                             showFlash = false
                         }
                         if let img = image {
-//                            print("Got image from ARView snapshot")
-//                            lastPhoto = img
-                            
                             let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
                             lastPhoto = croppedImage
-//                            savePhotoToAlbum(img)
                             savePhotoToAppStorage(croppedImage)
                         } else {
                             print("No image captured")
@@ -212,170 +184,6 @@ struct ContentView: View {
             print("❌ Error saving image: \(error.localizedDescription)")
         }
     }
-    
-    // Function to save the photo to a custom album with metadata
-    func savePhotoToAlbum(_ image: UIImage) {
-        let albumName = "Apple Academy Challenge 2 "
-        PHPhotoLibrary.requestAuthorization { status in
-            if status == .authorized {
-                var album: PHAssetCollection?
-                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
-                
-                collections.enumerateObjects { collection, _, _ in
-                    if collection.localizedTitle == albumName {
-                        album = collection
-                    }
-                }
-
-                if album == nil {
-                    // If album doesn't exist, create it
-                    PHPhotoLibrary.shared().performChanges {
-                        PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: albumName)
-                    } completionHandler: { success, error in
-                        if success {
-                            self.saveImageToAlbum(image, albumName: albumName)
-                        }
-                    }
-                } else {
-                    self.saveImageToAlbum(image, albumName: albumName)
-                }
-            }
-        }
-    }
-
-    // Function to save the image to the album with custom metadata
-    func saveImageToAlbum(_ image: UIImage, albumName: String) {
-        // Request photo library access
-        PHPhotoLibrary.requestAuthorization { status in
-            if status == .authorized {
-                // Check if the album already exists
-                var album: PHAssetCollection?
-                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
-                
-                collections.enumerateObjects { collection, _, _ in
-                    if collection.localizedTitle == albumName {
-                        album = collection
-                    }
-                }
-
-                // If album doesn't exist, create it
-                if album == nil {
-                    PHPhotoLibrary.shared().performChanges({
-                        PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: albumName)
-                    }) { success, error in
-                        if success {
-                            self.saveImageToAlbum(image, albumName: albumName) // Try saving again
-                        } else if let error = error {
-                            print("Error creating album: \(error.localizedDescription)")
-                        }
-                    }
-                    return
-                }
-
-                // Proceed to save image with metadata
-                guard let imageData = image.jpegData(compressionQuality: 1.0),
-                      let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
-                      let type = CGImageSourceGetType(imageSource) else {
-                    print("Failed to prepare image source/type.")
-                    return
-                }
-
-                // Add custom metadata (you can expand this as needed)
-                let metadata: [String: Any] = [
-                    kCGImagePropertyExifDictionary as String: [
-                        kCGImagePropertyExifUserComment as String: "Taken with Apple Academy Challenge 2 App"
-                    ]
-                ]
-
-                // Copy metadata
-                let mutableMetadata = metadata as NSDictionary
-
-                // Create mutable CFData from Data
-                let mutableData = NSMutableData(data: imageData)
-                guard let imageDestination = CGImageDestinationCreateWithData(mutableData as CFMutableData, type, 1, nil) else {
-                    print("Failed to create image destination.")
-                    return
-                }
-
-                CGImageDestinationAddImageFromSource(imageDestination, imageSource, 0, mutableMetadata)
-
-                if CGImageDestinationFinalize(imageDestination),
-                   let finalImage = UIImage(data: mutableData as Data) {
-
-                    // Save the image with metadata to the custom album
-                    PHPhotoLibrary.shared().performChanges {
-                        let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: finalImage)
-                        if let assetPlaceholder = creationRequest.placeholderForCreatedAsset {
-                            let fetchOptions = PHFetchOptions()
-                            fetchOptions.predicate = NSPredicate(format: "localizedTitle = %@", albumName)
-                            let collection = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions).firstObject
-                            if let album = collection {
-                                let albumChangeRequest = PHAssetCollectionChangeRequest(for: album)
-                                albumChangeRequest?.addAssets([assetPlaceholder] as NSArray)
-                            }
-                        }
-                    } completionHandler: { success, error in
-                        if success {
-                            print("Photo saved to album '\(albumName)' successfully.")
-                        } else {
-                            print("Error saving photo: \(error?.localizedDescription ?? "Unknown error")")
-                        }
-                    }
-                } else {
-                    print("Failed to finalize image with metadata.")
-                }
-            } else {
-                print("Photo library access denied.")
-            }
-        }
-    }
-
-    
-    // Function to get image metadata (can be extended to include more metadata)
-    func getImageMetadata() -> NSDictionary {
-        let metadata: [String: Any] = [
-            kCGImagePropertyExifDictionary as String: [
-                kCGImagePropertyExifUserComment as String: "Taken with Apple Academy Challenge 2 App"
-            ]
-        ]
-        return metadata as NSDictionary
-    }
-
-    // Function to load photos from the album
-//    func loadPhotos() {
-//        let albumName = "Apple Academy Challenge 2"
-//        var photoArray: [UIImage] = []
-//        var assetArray: [PHAsset] = []
-//
-//        PHPhotoLibrary.requestAuthorization { status in
-//            if status == .authorized {
-//                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
-//                
-//                collections.enumerateObjects { collection, _, _ in
-//                    if collection.localizedTitle == albumName {
-//                        let assets = PHAsset.fetchAssets(in: collection, options: nil)
-//                        
-//                        assets.enumerateObjects { asset, _, _ in
-//                            let imageManager = PHImageManager.default()
-//                            let options = PHImageRequestOptions()
-//                            options.isSynchronous = true
-//                            
-//                            imageManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFill, options: options) { image, _ in
-//                                if let image = image {
-//                                    photoArray.append(image)
-//                                    assetArray.append(asset)
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//                DispatchQueue.main.async {
-//                    self.photos = photoArray
-//                    self.photoAssets = assetArray
-//                }
-//            }
-//        }
-//    }
     
     func cropToAspectRatio(image: UIImage, aspectRatio: CGSize) -> UIImage {
         let originalSize = image.size

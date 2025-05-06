@@ -1,12 +1,16 @@
 import SwiftUI
 import Photos
+import UserNotifications
 
 struct PhotoDetailView: View {
-    @Binding var photoAssets: [PHAsset]
+//    @Binding var photoAssets: [PHAsset]
     @Binding var photos: [UIImage]
     @Binding var selectedIndex: Int
 
     @Environment(\.presentationMode) var presentationMode
+
+    @State private var showAlert = false
+    @State private var alertMessage = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,11 +25,13 @@ struct PhotoDetailView: View {
                 }
                 Spacer()
                 VStack(spacing: 2) {
-                    Text(getDayOfWeek(from: selectedIndex))
+//                    Text(getDayOfWeek(from: selectedIndex))
+//                        .font(.headline)
+//                    Text(getTimeString(from: selectedIndex))
+//                        .font(.subheadline)
+//                        .foregroundColor(.gray)
+                    Text("Photo Preview")
                         .font(.headline)
-                    Text(getTimeString(from: selectedIndex))
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
                 }
                 Spacer()
                 Spacer().frame(width: 44) // Balance the left back button
@@ -64,54 +70,32 @@ struct PhotoDetailView: View {
 
             // Bottom Toolbar
             HStack(spacing: 30) {
+                Spacer()
                 Button(action: { shareImage() }) {
                     Image(systemName: "square.and.arrow.up")
                 }
-                Button(action: { /* favorite action */ }) {
-                    Image(systemName: "heart")
+                Spacer()
+                Spacer()
+                Button(action: { saveImage() }) {
+                    Image(systemName: "arrow.down.to.line.alt") // Save icon
                 }
-                Button(action: { /* info action */ }) {
-                    Image(systemName: "info.circle")
-                }
-                Button(action: { /* edit action */ }) {
-                    Image(systemName: "slider.horizontal.3")
-                }
+                Spacer()
+                Spacer()
                 Button(action: { deleteImage() }) {
                     Image(systemName: "trash")
                 }
+                Spacer()
             }
             .padding(.bottom, 20)
             .padding(.top, 10)
             .font(.title2)
+            .alert(isPresented: $showAlert) {
+                Alert(title: Text("Success"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            }
         }
         .navigationBarHidden(true)
     }
 
-    // MARK: - Helper Methods
-
-    private func getDayOfWeek(from index: Int) -> String {
-        if index < photoAssets.count {
-            let asset = photoAssets[index]
-            if let creationDate = asset.creationDate {
-                let formatter = DateFormatter()
-                formatter.dateFormat = "EEEE"
-                return formatter.string(from: creationDate)
-            }
-        }
-        return "Unknown Day"
-    }
-
-    private func getTimeString(from index: Int) -> String {
-        if index < photoAssets.count {
-            let asset = photoAssets[index]
-            if let creationDate = asset.creationDate {
-                let formatter = DateFormatter()
-                formatter.dateFormat = "HH:mm"
-                return formatter.string(from: creationDate)
-            }
-        }
-        return "Unknown Time"
-    }
 
     private func shareImage() {
         let image = photos[selectedIndex]
@@ -125,7 +109,59 @@ struct PhotoDetailView: View {
     private func deleteImage() {
         // You can extend this to remove from storage too
         photos.remove(at: selectedIndex)
-        photoAssets.remove(at: selectedIndex)
+//        photoAssets.remove(at: selectedIndex)
         presentationMode.wrappedValue.dismiss()
+    }
+
+    private func saveImage() {
+        let image = photos[selectedIndex]
+        guard let imageData = image.jpegData(compressionQuality: 1.0) else {
+            return
+        }
+
+        // Request access to Photos if needed
+        PHPhotoLibrary.requestAuthorization { status in
+            if status == .authorized {
+                // Create a specific album if it doesn't exist
+                var album: PHAssetCollection?
+                let fetchOptions = PHFetchOptions()
+                fetchOptions.predicate = NSPredicate(format: "title == %@", "Apple Academy Challenge 2")
+                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .albumRegular, options: fetchOptions)
+                if let existingAlbum = collections.firstObject {
+                    album = existingAlbum
+                } else {
+                    // Create a new album
+                    PHPhotoLibrary.shared().performChanges({
+                        PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: "Apple Academy Challenge 2")
+                    }) { success, error in
+                        if success, let newAlbum = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .albumRegular, options: fetchOptions).firstObject {
+                            album = newAlbum
+                            saveImageToAlbum(album: album)
+                        }
+                    }
+                    return
+                }
+                saveImageToAlbum(album: album)
+            }
+        }
+    }
+
+    private func saveImageToAlbum(album: PHAssetCollection?) {
+        // Save the image to the specific album
+        PHPhotoLibrary.shared().performChanges({
+            if let album = album {
+                let assetChangeRequest = PHAssetChangeRequest.creationRequestForAsset(from: photos[selectedIndex])
+                let assetPlaceholder = assetChangeRequest.placeholderForCreatedAsset
+                let albumChangeRequest = PHAssetCollectionChangeRequest(for: album)
+                albumChangeRequest?.addAssets([assetPlaceholder!] as NSArray)
+            }
+        }) { success, error in
+            if success {
+                alertMessage = "Image saved to 'Apple Academy Challenge 2' album!"
+            } else {
+                alertMessage = "Failed to save image."
+            }
+            showAlert = true
+        }
     }
 }

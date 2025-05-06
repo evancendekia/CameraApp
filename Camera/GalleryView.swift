@@ -12,11 +12,6 @@ struct GalleryView: View {
 
     var body: some View {
         VStack {
-            Text("Gallery")
-                .font(.largeTitle)
-                .padding()
-
-            // Gallery of Thumbnails
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
                     ForEach(photos, id: \.self) { photo in
@@ -38,13 +33,8 @@ struct GalleryView: View {
             }
             
             Spacer()
-//            NavigationLink(destination: GalleryDetailView(photoAssets: $photoAssets, photos: $photos, selectedIndex: $selectedIndex), isActive: $isFullScreen) {
-//                EmptyView()
-//            }
             .navigationDestination(isPresented: $isFullScreen) {
-                GalleryDetailView(photoAssets: $photoAssets,
-                                  photos: $photos,
-                                  selectedIndex: $selectedIndex)
+                PhotoDetailView(photos: $photos,selectedIndex: $selectedIndex)
             }
         }
         .navigationBarTitle("Gallery", displayMode: .inline)
@@ -58,7 +48,6 @@ struct GalleryView: View {
 
     private func loadPhotos() {
         loadPhotosFromInternalStorage() // Load images from internal storage
-//        loadPhotosFromPhotoLibrary() // Load images from Photos app
     }
 
     private func loadPhotosFromInternalStorage() {
@@ -91,34 +80,34 @@ struct GalleryView: View {
         }
     }
 
-    private func loadPhotosFromPhotoLibrary() {
-        let albumName = "Apple Academy Challenge 2"
-        var loadedPhotos: [UIImage] = []
-
-        PHPhotoLibrary.requestAuthorization { status in
-            if status == .authorized {
-                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
-                collections.enumerateObjects { collection, _, _ in
-                    if collection.localizedTitle == albumName {
-                        let assets = PHAsset.fetchAssets(in: collection, options: nil)
-                        let imageManager = PHImageManager.default()
-                        let options = PHImageRequestOptions()
-                        options.isSynchronous = true
-
-                        assets.enumerateObjects { asset, _, _ in
-                            imageManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFill, options: options) { image, _ in
-                                if let image = image {
-                                    loadedPhotos.append(image)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                DispatchQueue.main.async {
-                    self.photos.append(contentsOf: loadedPhotos.reversed()) // Newest first
-                }
-            }
-        }
-    }
+//    private func loadPhotosFromPhotoLibrary() {
+//        let albumName = "Apple Academy Challenge 2"
+//        var loadedPhotos: [UIImage] = []
+//
+//        PHPhotoLibrary.requestAuthorization { status in
+//            if status == .authorized {
+//                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
+//                collections.enumerateObjects { collection, _, _ in
+//                    if collection.localizedTitle == albumName {
+//                        let assets = PHAsset.fetchAssets(in: collection, options: nil)
+//                        let imageManager = PHImageManager.default()
+//                        let options = PHImageRequestOptions()
+//                        options.isSynchronous = true
+//
+//                        assets.enumerateObjects { asset, _, _ in
+//                            imageManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFill, options: options) { image, _ in
+//                                if let image = image {
+//                                    loadedPhotos.append(image)
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//
+//                DispatchQueue.main.async {
+//                    self.photos.append(contentsOf: loadedPhotos.reversed()) // Newest first
+//                }
+//            }
+//        }
+//    }
 }
