@@ -236,6 +236,7 @@ struct ARViewContainer: UIViewRepresentable {
     @Binding var faces: [FaceData]
     @Binding var faceID: UUID
     var viewModel: ARViewModel
+    @Binding var isExpressionDetectionEnabled: Bool  // <-- Add this
 
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
@@ -267,7 +268,7 @@ struct ARViewContainer: UIViewRepresentable {
     func updateUIView(_ uiView: ARView, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(self, faces: $faces, faceID: $faceID)
+        Coordinator(self, faces: $faces, faceID: $faceID, isExpressionDetectionEnabled: $isExpressionDetectionEnabled)
     }
 
     class Coordinator: NSObject, ARSessionDelegate {
@@ -275,10 +276,12 @@ struct ARViewContainer: UIViewRepresentable {
         private var cleanupTimer: Timer?
         @Binding var faces: [FaceData]
         @Binding var faceID: UUID
+        @Binding var isExpressionDetectionEnabled: Bool
 
-        init(_ parent: ARViewContainer,faces: Binding<[FaceData]>, faceID: Binding<UUID>) {
+        init(_ parent: ARViewContainer,faces: Binding<[FaceData]>, faceID: Binding<UUID>, isExpressionDetectionEnabled: Binding<Bool>) {
             _faces = faces
             _faceID = faceID
+            _isExpressionDetectionEnabled = isExpressionDetectionEnabled
             self.parent = parent
             super.init()
             startCleanupTimer()
@@ -300,6 +303,7 @@ struct ARViewContainer: UIViewRepresentable {
             }
         }
         func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
+            guard isExpressionDetectionEnabled else { return }
             for anchor in anchors {
                 guard let faceAnchor = anchor as? ARFaceAnchor else { continue }
 

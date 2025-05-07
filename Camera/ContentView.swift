@@ -24,6 +24,8 @@ struct ContentView: View {
     @State private var lastCaptureTime: Date = .distantPast
     @State private var showFlash = false
     
+    @State private var isExpressionDetectionEnabled: Bool = false
+    
     
     var body: some View {
         NavigationView {
@@ -31,12 +33,16 @@ struct ContentView: View {
                 // Camera Preview
 //                CameraPreview(session: cameraService.session)
 //                    .ignoresSafeArea()
+                Color.black.opacity(1)
+                    .ignoresSafeArea()
                 VStack{
                     Spacer()
-                    ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel)
+                    ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel,isExpressionDetectionEnabled: $isExpressionDetectionEnabled)
                         .aspectRatio(3/4, contentMode: .fit)
                         .clipped()
                         .edgesIgnoringSafeArea(.all)
+                        .padding(.bottom, 120)
+                    Spacer()
                     Spacer()
                     Spacer()
                     Spacer()
@@ -48,8 +54,8 @@ struct ContentView: View {
                     .animation(.easeOut(duration: 0.2), value: showFlash)
                 VStack {
                     Spacer()
-//                    Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
-//                    Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
+                    Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
+                    Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
 //                    List(faces) { face in
 //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
 //                    }
@@ -75,30 +81,42 @@ struct ContentView: View {
                         }
 
                         Spacer()
+//                        Toggle("Enable Expression Detection", isOn: $isExpressionDetectionEnabled)
+//                            .padding()
+//                            .foregroundColor(.white)
                         
                         Button(action: {
-                            arViewModel.captureSnapshot { image in
-                                
-                                showFlash = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    showFlash = false
-                                }
-                                if let img = image {
-                                    let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
-                                    lastPhoto = croppedImage
-                                    savePhotoToAppStorage(croppedImage)
+                            isExpressionDetectionEnabled = !isExpressionDetectionEnabled
+//                            arViewModel.captureSnapshot { image in
+//                                
+//                                showFlash = true
+//                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+//                                    showFlash = false
+//                                }
+//                                if let img = image {
+//                                    let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
+//                                    lastPhoto = croppedImage
+//                                    savePhotoToAppStorage(croppedImage)
+//                                } else {
+//                                    print("No image captured")
+//                                }
+//                            }
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 4)
+                                    .frame(width: 70, height: 70)
+
+                                if isExpressionDetectionEnabled {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.red)
+                                        .frame(width: 40, height: 40)
                                 } else {
-                                    print("No image captured")
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 60, height: 60)
                                 }
                             }
-                        }) {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 70, height: 70)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.black.opacity(0.8), lineWidth: 2)
-                                )
                         }
 
                         Spacer()
@@ -113,7 +131,7 @@ struct ContentView: View {
                                 .padding(.trailing)
                         }
                     }
-                    .padding(.bottom, 30)
+                    .padding(.bottom, 50)
                 }
             }
             .navigationDestination(isPresented: $showingGallery) {
@@ -144,7 +162,7 @@ struct ContentView: View {
                 
                 let now = Date()
 //                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
-                if numberOfFaces == numberOfSmiling && now.timeIntervalSince(lastCaptureTime) > 1 {
+                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 1 {
                     
                     lastCaptureTime = now
                     arViewModel.captureSnapshot { image in
