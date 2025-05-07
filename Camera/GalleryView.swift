@@ -1,14 +1,17 @@
 import SwiftUI
 import Photos
+import SwiftData
 
 struct GalleryView: View {
-    @State var photos: [UIImage]  // Pass the photos array from ContentView
+    @State var photos: [UIImage]
     @Binding var photoAssets: [PHAsset]
     @Binding var isFullScreen: Bool
     @Binding var selectedPhoto: UIImage?
     @State private var currentPhotos: [UIImage] = []
     @State private var selectedIndex: Int = 0
     @State private var imageFileURLs: [URL] = []
+
+    @Query var takenPhotos: [TakenPhoto] = []
 
     var body: some View {
         VStack {
@@ -39,75 +42,36 @@ struct GalleryView: View {
         }
         .navigationBarTitle("Gallery", displayMode: .inline)
         .onAppear {
-            if photos.isEmpty {
-                loadPhotos() // Only load if not already loaded
-            }
-            isFullScreen = false
+            loadImagesFromTakenPhotos()
         }
     }
 
-    private func loadPhotos() {
-        loadPhotosFromInternalStorage() // Load images from internal storage
-    }
-
-    private func loadPhotosFromInternalStorage() {
+    
+    private func loadImagesFromTakenPhotos() {
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-
-        do {
-            let urls = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-                .filter { $0.pathExtension.lowercased() == "jpg" || $0.pathExtension.lowercased() == "png" }
-                .sorted { $0.lastPathComponent > $1.lastPathComponent } // Newest first
-
-            self.imageFileURLs = urls
-            loadImagesFromFileURLs(urls)
-        } catch {
-            print("Error loading images from internal storage: \(error.localizedDescription)")
-        }
-    }
-
-    private func loadImagesFromFileURLs(_ urls: [URL]) {
-        var loadedPhotos: [UIImage] = []
         
-        for url in urls {
-            if let image = UIImage(contentsOfFile: url.path) {
-                loadedPhotos.append(image)
+        print("📂 Attempting to load photos from: \(documentsURL.path)")
+        print(takenPhotos)
+        for photo in takenPhotos {
+            let fileURL = documentsURL.appendingPathComponent(photo.filename)
+            
+            if fileManager.fileExists(atPath: fileURL.path) {
+                do {
+                    let data = try Data(contentsOf: fileURL)
+                    if let image = UIImage(data: data) {
+                        DispatchQueue.main.async {
+                            self.photos.insert(image, at: 0)
+                        }
+                    } else {
+                        print("Could not decode image data for \(photo.filename)")
+                    }
+                } catch {
+                    print("Error loading image data for \(photo.filename): \(error.localizedDescription)")
+                }
+            } else {
+                print("File not found: \(photo.filename) in Documents directory")
             }
         }
-
-        DispatchQueue.main.async {
-            self.photos.append(contentsOf: loadedPhotos.reversed())
-        }
     }
-
-//    private func loadPhotosFromPhotoLibrary() {
-//        let albumName = "Apple Academy Challenge 2"
-//        var loadedPhotos: [UIImage] = []
-//
-//        PHPhotoLibrary.requestAuthorization { status in
-//            if status == .authorized {
-//                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
-//                collections.enumerateObjects { collection, _, _ in
-//                    if collection.localizedTitle == albumName {
-//                        let assets = PHAsset.fetchAssets(in: collection, options: nil)
-//                        let imageManager = PHImageManager.default()
-//                        let options = PHImageRequestOptions()
-//                        options.isSynchronous = true
-//
-//                        assets.enumerateObjects { asset, _, _ in
-//                            imageManager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFill, options: options) { image, _ in
-//                                if let image = image {
-//                                    loadedPhotos.append(image)
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//
-//                DispatchQueue.main.async {
-//                    self.photos.append(contentsOf: loadedPhotos.reversed()) // Newest first
-//                }
-//            }
-//        }
-//    }
 }

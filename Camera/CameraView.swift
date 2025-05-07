@@ -21,6 +21,7 @@ struct CameraView: View {
     
     @State private var isExpressionDetectionEnabled: Bool = false
     
+    @Environment(\.modelContext) var context
     
     var body: some View {
         NavigationView {
@@ -76,26 +77,8 @@ struct CameraView: View {
                         }
 
                         Spacer()
-//                        Toggle("Enable Expression Detection", isOn: $isExpressionDetectionEnabled)
-//                            .padding()
-//                            .foregroundColor(.white)
-                        
                         Button(action: {
                             isExpressionDetectionEnabled = !isExpressionDetectionEnabled
-//                            arViewModel.captureSnapshot { image in
-//                                
-//                                showFlash = true
-//                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-//                                    showFlash = false
-//                                }
-//                                if let img = image {
-//                                    let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
-//                                    lastPhoto = croppedImage
-//                                    savePhotoToAppStorage(croppedImage)
-//                                } else {
-//                                    print("No image captured")
-//                                }
-//                            }
                         }) {
                             ZStack {
                                 Circle()
@@ -115,16 +98,8 @@ struct CameraView: View {
                         }
 
                         Spacer()
+                        Spacer()
 
-                        // Switch Camera Button
-                        Button(action: {
-                            cameraService.switchCamera()
-                        }) {
-                            Image(systemName: "arrow.triangle.2.circlepath.camera")
-                                .font(.system(size: 30))
-                                .foregroundColor(.white)
-                                .padding(.trailing)
-                        }
                     }
                     .padding(.bottom, 50)
                 }
@@ -190,9 +165,10 @@ struct CameraView: View {
         do {
             try data.write(to: fileURL)
             print("✅ Saved to: \(fileURL.lastPathComponent)")
-            DispatchQueue.main.async {
-                self.photos.insert(image, at: 0)
-            }
+            let thePhoto = TakenPhoto(id: UUID(), timestamp: Date(), filename: filename, session: "testsessionid")
+            context.insert(thePhoto)
+            try! context.save()
+            
         } catch {
             print("❌ Error saving image: \(error.localizedDescription)")
         }
