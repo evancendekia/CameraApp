@@ -9,7 +9,7 @@ import SwiftUI
 
 struct Item: Identifiable {
     var id: UUID = UUID()
-    var SessionID = UUID()
+    var session: Session
     var url: URL
     let creationDate: Date?
 }
