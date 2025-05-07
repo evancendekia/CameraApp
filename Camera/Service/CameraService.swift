@@ -9,27 +9,7 @@ class CameraService: NSObject, ObservableObject {
 
     private var completion: ((UIImage?) -> Void)?
 
-//    func configure() {
-//        session.beginConfiguration()
-//        session.sessionPreset = .photo
-//
-//        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentCameraPosition),
-//              let input = try? AVCaptureDeviceInput(device: device),
-//              session.canAddInput(input) else {
-//            print("Unable to access camera")
-//            return
-//        }
-//
-//        session.inputs.forEach { session.removeInput($0) } // Clean old inputs
-//        session.addInput(input)
-//
-//        if session.canAddOutput(photoOutput) {
-//            session.addOutput(photoOutput)
-//        }
-//
-//        session.commitConfiguration()
-//        session.startRunning()
-//    }
+
     func configure() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
@@ -61,6 +41,7 @@ class CameraService: NSObject, ObservableObject {
         currentCameraPosition = currentCameraPosition == .back ? .front : .back
         configure()
     }
+    
     private func setupSession() {
         session.beginConfiguration()
         session.sessionPreset = .photo

@@ -4,7 +4,7 @@ import ARKit
 import SwiftUI
 
 class ARViewModel: ObservableObject {
-    var coordinator: ARViewContainer.Coordinator?
+//    var coordinator: ARViewContainer.Coordinator?
     
     var arView: ARView?
 

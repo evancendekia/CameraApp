@@ -5,4 +5,19 @@
 //  Created by acqmal on 5/7/25.
 //
 
-import Foundation
+import SwiftUI
+
+struct Item: Identifiable {
+    var id: UUID = UUID()
+    var SessionID = UUID()
+    var url: URL
+    let creationDate: Date?
+}
+
+
+
+extension Item: Equatable {
+    static func == (lhs: Item, rhs: Item) -> Bool {
+        return lhs.id == rhs.id && lhs.id == rhs.id
+    }
+}

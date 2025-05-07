@@ -1,13 +1,8 @@
 import SwiftUI
 import Photos
 
-struct FaceData: Identifiable, Equatable {
-    let id: UUID
-    var expression: String
-    var lastSeen: Date
-}
 
-struct ContentView: View {
+struct CameraView: View {
     @StateObject var cameraService = CameraService()
     @State private var lastPhoto: UIImage?
     @State private var showingGallery = false

@@ -59,25 +59,25 @@ struct GalleryDetailView: View {
                 Button {
                     // action delete
                     // Only attempt to delete if we have photos
-                    if !photoAssets.isEmpty && selectedIndex < photoAssets.count {
-                        let assetToDelete = photoAssets[selectedIndex]
-                        deletePhoto(asset: assetToDelete) { success in
-                            if success {
-                                // Update both arrays to keep them in sync
-                                photos.remove(at: selectedIndex)
-                                photoAssets.remove(at: selectedIndex)
-                                
-                                // Handle index after deletion
-                                if photoAssets.isEmpty {
-                                    // If no photos left, dismiss the view
-                                    dismiss()
-                                } else if selectedIndex >= photoAssets.count {
-                                    // If the deleted photo was the last one, adjust index
-                                    selectedIndex = max(0, photoAssets.count - 1)
-                                }
-                            }
-                        }
-                    }
+//                    if !photoAssets.isEmpty && selectedIndex < photoAssets.count {
+//                        let assetToDelete = photoAssets[selectedIndex]
+//                        deletePhoto(asset: assetToDelete) { success in
+//                            if success {
+//                                // Update both arrays to keep them in sync
+//                                photos.remove(at: selectedIndex)
+//                                photoAssets.remove(at: selectedIndex)
+//                                
+//                                // Handle index after deletion
+//                                if photoAssets.isEmpty {
+//                                    // If no photos left, dismiss the view
+//                                    dismiss()
+//                                } else if selectedIndex >= photoAssets.count {
+//                                    // If the deleted photo was the last one, adjust index
+//                                    selectedIndex = max(0, photoAssets.count - 1)
+//                                }
+//                            }
+//                        }
+//                    }
                     
                 }label: {
                     Image(systemName: "trash")
