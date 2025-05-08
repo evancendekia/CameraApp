@@ -11,6 +11,14 @@ struct CameraView: View {
     @State private var selectedPhoto: UIImage?
     @State private var photoAssets: [PHAsset] = []
     
+    
+    @State private var timeRemaining = 3600
+//    @State private var timeRemaining = 10
+    @State private var timer: Timer? = nil
+    @State private var isRunning = false
+    @State private var showAlert = false
+
+    
     @State private var faces: [FaceData] = []
     @State private var faceID: UUID = UUID()
     @StateObject var arViewModel = ARViewModel()
@@ -20,6 +28,7 @@ struct CameraView: View {
     @State private var showFlash = false
     
     @State private var isExpressionDetectionEnabled: Bool = false
+    @State private var photoCounter: Int = 0
     
     @Environment(\.modelContext) var context
     
@@ -44,14 +53,24 @@ struct CameraView: View {
                     Spacer()
                 }
                 
+                GeometryReader { geometry in
+                    Text(timeString(from: timeRemaining))
+                        .font(.system(size: 32, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .position(x: geometry.size.width / 2, y: geometry.size.height * 0.15)
+                }
+                .ignoresSafeArea()
+                .zIndex(1)
+                
                 Color.black
                     .opacity(showFlash ? 1 : 0)
                     .ignoresSafeArea()
                     .animation(.easeOut(duration: 0.2), value: showFlash)
                 VStack {
                     Spacer()
-                    Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
-                    Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
+//                    Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
+//                    Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
 //                    List(faces) { face in
 //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
 //                    }
@@ -79,6 +98,20 @@ struct CameraView: View {
                         Spacer()
                         Button(action: {
                             isExpressionDetectionEnabled = !isExpressionDetectionEnabled
+                            if isExpressionDetectionEnabled {
+                                photoCounter = 0
+                                timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                                    if timeRemaining > 0 {
+                                        timeRemaining -= 1
+                                    } else {
+                                        stopTimer()
+                                        showAlert = true
+                                    }
+                                }
+                            }else{
+                                stopTimer()
+                                showAlert = true
+                            }
                         }) {
                             ZStack {
                                 Circle()
@@ -103,6 +136,15 @@ struct CameraView: View {
                     }
                     .padding(.bottom, 50)
                 }
+            }
+            .alert(isPresented: $showAlert) {
+                Alert(
+                    title: Text("Finish capture your moment"),
+                    message: Text("You got total \(photoCounter) pictures. \n Don’t forget to see the result and pick your best moment"),
+                    dismissButton: .default(Text("OK"), action: {
+                        resetTimer()
+                    })
+                )
             }
             .navigationDestination(isPresented: $showingGallery) {
                 GalleryView(
@@ -132,7 +174,7 @@ struct CameraView: View {
                 
                 let now = Date()
 //                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
-                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 1 {
+                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 3 {
                     
                     lastCaptureTime = now
                     arViewModel.captureSnapshot { image in
@@ -145,6 +187,7 @@ struct CameraView: View {
                             let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
                             lastPhoto = croppedImage
                             savePhotoToAppStorage(croppedImage)
+                            photoCounter += 1
                         } else {
                             print("No image captured")
                         }
@@ -195,5 +238,27 @@ struct CameraView: View {
         
         guard let cgImage = image.cgImage?.cropping(to: cropRect) else { return image }
         return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+    }
+    func timeString(from seconds: Int) -> String {
+        let hrs = seconds / 3600
+        let mins = (seconds % 3600) / 60
+        let secs = seconds % 60
+        return String(format: "%02d:%02d:%02d", hrs, mins, secs)
+    }
+    func stopTimer() {
+        isExpressionDetectionEnabled = false
+        timer?.invalidate()
+        timer = nil
+        isRunning = false
+    }
+
+    func resetTimer() {
+        timeRemaining = 3600
+    }
+}
+
+struct CameraView_Previews: PreviewProvider {
+    static var previews: some View {
+        CameraView()
     }
 }
