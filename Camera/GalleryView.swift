@@ -2,6 +2,12 @@ import SwiftUI
 import Photos
 import SwiftData
 
+struct PhotoItem: Identifiable, Equatable {
+    let id = UUID()
+    let image: UIImage
+    let filename: String
+}
+
 struct GalleryView: View {
     @State var photos: [UIImage]
     @Binding var photoAssets: [PHAsset]
@@ -17,6 +23,7 @@ struct GalleryView: View {
     @State private var selectedIndexes: Set<Int> = []
     @State private var isMultiSelectMode: Bool = false
     @State private var showMultiSelectDeleteConfirmation = false
+    @State var photoItems: [PhotoItem] = []
     
     @Query var takenPhotos: [TakenPhoto] = []
     
@@ -115,7 +122,8 @@ struct GalleryView: View {
             titleVisibility: .visible
         ) {
             Button("Delete", role: .destructive) {
-                //                deleteSelectedPhotos()
+                deleteSelectedPhotos()
+                showMultiSelectDeleteConfirmation = false
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -142,6 +150,32 @@ struct GalleryView: View {
         }
     }
     
+    func deleteSelectedPhotos() {
+        let sortedIndexes = selectedIndexes.sorted(by: >)
+        let fileManager = FileManager.default
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+
+        for index in sortedIndexes {
+            let photoItem = photoItems[index]
+            let fileURL = documentsURL.appendingPathComponent(photoItem.filename)
+
+            do {
+                if fileManager.fileExists(atPath: fileURL.path) {
+                    try fileManager.removeItem(at: fileURL)
+                    print("🗑️ Deleted file: \(photoItem.filename)")
+                }
+            } catch {
+                print("❌ Could not delete file: \(error.localizedDescription)")
+            }
+
+            photoItems.remove(at: index)
+        }
+
+        selectedIndexes.removeAll()
+        isMultiSelectMode = false
+        photos = []
+        loadImagesFromTakenPhotos()
+    }
     
     private func loadImagesFromTakenPhotos() {
         let fileManager = FileManager.default
@@ -158,6 +192,7 @@ struct GalleryView: View {
                     if let image = UIImage(data: data) {
                         DispatchQueue.main.async {
                             self.photos.insert(image, at: 0)
+                            self.photoItems.insert(PhotoItem(image: image, filename: photo.filename), at: 0)
                         }
                     } else {
                         print("Could not decode image data for \(photo.filename)")
@@ -166,7 +201,7 @@ struct GalleryView: View {
                     print("Error loading image data for \(photo.filename): \(error.localizedDescription)")
                 }
             } else {
-                print("File not found: \(photo.filename) in Documents directory")
+                print("😭 File not found: \(photo.filename) in Documents directory")
             }
         }
     }
