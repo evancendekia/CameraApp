@@ -1,5 +1,6 @@
 import SwiftUI
 import Photos
+import TipKit
 
 
 struct CameraView: View {
@@ -31,6 +32,22 @@ struct CameraView: View {
     @State private var photoCounter: Int = 0
     
     @Environment(\.modelContext) var context
+    
+    //MARK: TIP ONBOARDING
+    @State var homeScreenTip = TipGroup(.ordered){
+//        TimerTip()
+        ButtonTip()
+        ResultPhotoTip()
+    }
+    
+    @State private var firstTry: Bool = true
+    @State var isStopButtonTapped: Bool = false
+    @State private var isSmileTipVisible: Bool = false
+    @State private var disableButton = true
+    @State private var hasHiddenSmileMessage = false
+    @State private var isAnimateButtonStart: Bool = false
+    
+//    @AppStorage("isAnimateButtonStart") var isAnimateButtonStart: Bool = false
     
     var body: some View {
         NavigationView {
@@ -75,6 +92,36 @@ struct CameraView: View {
 //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
 //                    }
 //                    .frame(maxHeight: 200)
+                    if isExpressionDetectionEnabled && !hasHiddenSmileMessage && firstTry{
+                        VStack {
+                            Text("Smile to get capture")
+                                .font(.largeTitle.bold())
+                            
+                            Text("The app captures your smile and saves it!")
+                                .font(.system(size: 15))
+                        }
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                                withAnimation {
+                                    hasHiddenSmileMessage = true
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                    withAnimation {
+                                        hasHiddenSmileMessage = false
+                                    }
+                                }
+                            }
+   
+                        }
+                        .foregroundStyle(.black)
+                        .frame(width: 328, height: 126)
+                        .background(Color.white.opacity(0.7))
+                        .cornerRadius(20)
+                        .padding(.bottom, 50)
+                        
+                    }
+                    
+                    
                     HStack {
                         Button {
                            showingGallery = true
@@ -96,43 +143,65 @@ struct CameraView: View {
                         }
 
                         Spacer()
-                        Button(action: {
-                            isExpressionDetectionEnabled = !isExpressionDetectionEnabled
-                            if isExpressionDetectionEnabled {
-                                photoCounter = 0
-                                timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                                    if timeRemaining > 0 {
-                                        timeRemaining -= 1
-                                    } else {
-                                        stopTimer()
-                                        showAlert = true
+                        ZStack{
+                            RoundedRectangle(cornerRadius: 100)
+                                .fill(isAnimateButtonStart ? Color.white: .clear)
+                                .frame(width: 85, height: 85)
+                                .blur(radius: isAnimateButtonStart ? 20 : 0)
+                                .onAppear {
+                                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)){
+                                        isAnimateButtonStart = true
                                     }
                                 }
-                            }else{
-                                stopTimer()
-                                showAlert = true
-                            }
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 4)
-                                    .frame(width: 70, height: 70)
-
-                                if isExpressionDetectionEnabled {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.red)
-                                        .frame(width: 40, height: 40)
-                                } else {
-                                    Circle()
-                                        .fill(Color.red)
-                                        .frame(width: 60, height: 60)
+                            Button(action: {
+                                withAnimation(){
+                                    isAnimateButtonStart = false
                                 }
+                                
+                                
+                                
+                                isExpressionDetectionEnabled = !isExpressionDetectionEnabled
+                                if isExpressionDetectionEnabled == false && firstTry {
+                                    firstTry = false
+                                }
+                                if isExpressionDetectionEnabled {
+                                    photoCounter = 0
+                                    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                                        if timeRemaining > 0 {
+                                            timeRemaining -= 1
+                                        } else {
+                                            stopTimer()
+                                            showAlert = true
+                                        }
+                                    }
+                                }else{
+                                    stopTimer()
+                                    showAlert = true
+                                }
+                            }) {
+                                ZStack {
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: 4)
+                                            .frame(width: 70, height: 70)
+                                        
+                                        if isExpressionDetectionEnabled {
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(Color.red)
+                                                .frame(width: 40, height: 40)
+                                        } else {
+                                            Circle()
+                                                .fill(Color.red)
+                                                .frame(width: 60, height: 60)
+                                        }
+                                    
+                                }
+                                .popoverTip(homeScreenTip.currentTip as? ButtonTip)
                             }
+                            
                         }
-
+                        
                         Spacer()
                         Spacer()
-
                     }
                     .padding(.bottom, 50)
                 }
@@ -146,6 +215,17 @@ struct CameraView: View {
                     })
                 )
             }
+            .task {
+                do {
+                    try Tips.resetDatastore()
+                    try Tips.configure([
+                        .datastoreLocation(.applicationDefault),
+                    ])
+                } catch {
+                    print("Error initializing TipKit \(error.localizedDescription)")
+                }
+            }
+            
             .navigationDestination(isPresented: $showingGallery) {
                 GalleryView(
                     photos: photos,
@@ -176,6 +256,7 @@ struct CameraView: View {
 //                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
                 if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 3 {
                     
+                    //capture
                     lastCaptureTime = now
                     arViewModel.captureSnapshot { image in
                         
@@ -192,6 +273,12 @@ struct CameraView: View {
                             print("No image captured")
                         }
                     }
+                    
+                    //selesai capture pertama kali
+                    // stop
+                    stopTimer()
+                    resetTimer()
+                    
                 }
             }
         }
@@ -261,4 +348,9 @@ struct CameraView_Previews: PreviewProvider {
     static var previews: some View {
         CameraView()
     }
+}
+
+
+#Preview {
+    CameraView()
 }

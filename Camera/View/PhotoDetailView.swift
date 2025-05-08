@@ -2,6 +2,7 @@ import SwiftUI
 import Photos
 import UserNotifications
 import SwiftData
+import TipKit
 
 struct PhotoDetailView: View {
     @Binding var photos: [UIImage]
@@ -11,6 +12,9 @@ struct PhotoDetailView: View {
     @Environment(\.modelContext) var modelContext
     
     @Query var takenPhotos: [TakenPhoto] = []
+
+    @State private var saveTip = SaveTip()
+    @State private var deleteTip = DeleteTip()
     
     @State private var showAlert = false
     @State private var alertMessage = ""
@@ -96,6 +100,8 @@ struct PhotoDetailView: View {
                         .padding(8)
                         .background(Circle().fill(Color.gray.opacity(0.2)))
                 }
+                .popoverTip(deleteTip)
+                Spacer()
             }
             .padding()
             .font(.title2)
@@ -111,6 +117,17 @@ struct PhotoDetailView: View {
                 Text("Are you sure you want to delete this photo? This action cannot be undone.")
             }
         }
+        .task{
+            do{
+                try Tips.configure([
+                    .datastoreLocation(.applicationDefault),
+                    .displayFrequency(.hourly),
+                ])
+            } catch {
+                
+            }
+        }
+        
         .background(Color.white)
         .navigationBarHidden(true)
     }
