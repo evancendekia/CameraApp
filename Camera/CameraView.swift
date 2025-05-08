@@ -96,8 +96,8 @@ struct CameraView: View {
                     .animation(.easeOut(duration: 0.2), value: showFlash)
                 VStack {
                     Spacer()
-                    //                    Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
-                    //                    Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
+                                        Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
+                                        Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
                     //                    List(faces) { face in
                     //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
                     //                    }
@@ -264,16 +264,17 @@ struct CameraView: View {
                     
                     //capture
                     lastCaptureTime = now
-                    arViewModel.captureSnapshot { image in
-                        
+//                    arViewModel.captureSnapshot { image in
+                    arViewModel.captureHighResolutionPhoto{ image in
+                      
                         showFlash = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             showFlash = false
                         }
                         if let img = image {
-                            let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
-                            lastPhoto = croppedImage
-                            savePhotoToAppStorage(croppedImage)
+//                            let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
+                            lastPhoto = img
+                            savePhotoToAppStorage(img)
                             photoCounter += 1
                             
                             
