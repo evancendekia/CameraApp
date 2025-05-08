@@ -9,12 +9,16 @@ import TipKit
 
 struct TimerTip: Tip {
     var title: Text {
-        Text("Timer")
-    }
-    
-    var message: Text? {
         Text("Auto Capture is only available for 1 hour!")
-    }
+            .font(.body)
+//            .fontWeight(.bold)
+//            .frame(width: 200, height: 100)
+//            .TextAlignment()
+        }
+    
+//    var message: Text? {
+//        Text("")
+//    }
     
     var options: [TipOption] {
         [

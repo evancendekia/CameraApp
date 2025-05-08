@@ -14,11 +14,11 @@ struct CameraView: View {
     
     
     @State private var timeRemaining = 3600
-//    @State private var timeRemaining = 10
+    //    @State private var timeRemaining = 10
     @State private var timer: Timer? = nil
     @State private var isRunning = false
     @State private var showAlert = false
-
+    
     
     @State private var faces: [FaceData] = []
     @State private var faceID: UUID = UUID()
@@ -35,8 +35,9 @@ struct CameraView: View {
     
     //MARK: TIP ONBOARDING
     @State var homeScreenTip = TipGroup(.ordered){
-//        TimerTip()
+        TimerTip()
         ButtonTip()
+        StopButtonTip()
         ResultPhotoTip()
     }
     
@@ -46,20 +47,22 @@ struct CameraView: View {
     @State private var disableButton = true
     @State private var hasHiddenSmileMessage = false
     @State private var isAnimateButtonStart: Bool = false
+    @State private var tipAfterButtonStopRecord: Bool = false
+    @State private var showCapturedMessage = false
     
-//    @AppStorage("isAnimateButtonStart") var isAnimateButtonStart: Bool = false
+    //    @AppStorage("isAnimateButtonStart") var isAnimateButtonStart: Bool = false
     
     var body: some View {
         NavigationView {
             ZStack {
                 // Camera Preview
-//                CameraPreview(session: cameraService.session)
-//                    .ignoresSafeArea()
+                //                CameraPreview(session: cameraService.session)
+                //                    .ignoresSafeArea()
                 Color.black.opacity(1).ignoresSafeArea()
                 GeometryReader { geometry in
                     ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel,isExpressionDetectionEnabled: $isExpressionDetectionEnabled)
                         .aspectRatio(3/4, contentMode: .fit)
-//                        .aspectRatio(3/4, contentMode: .fill)
+                    //                        .aspectRatio(3/4, contentMode: .fill)
                         .clipped()
                         .ignoresSafeArea()
                         .padding(.bottom, 230)
@@ -70,6 +73,7 @@ struct CameraView: View {
                 GeometryReader { geometry in
                     Text(timeString(from: timeRemaining))
                         .font(.system(size: 32, design: .monospaced))
+                        .popoverTip(homeScreenTip.currentTip as? TimerTip)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .position(x: geometry.size.width / 2, y: geometry.size.height * 0.15)
@@ -83,32 +87,38 @@ struct CameraView: View {
                     .animation(.easeOut(duration: 0.2), value: showFlash)
                 VStack {
                     Spacer()
-//                    Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
-//                    Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
-//                    List(faces) { face in
-//                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
-//                    }
-//                    .frame(maxHeight: 200)
+                    //                    Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
+                    //                    Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
+                    //                    List(faces) { face in
+                    //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
+                    //                    }
+                    //                    .frame(maxHeight: 200)
                     if isExpressionDetectionEnabled && !hasHiddenSmileMessage && firstTry{
                         VStack {
-                            Text("Smile to get capture")
+                            Text(showCapturedMessage ? "Your smile is captured" : "Smile to get capture" )
                                 .font(.largeTitle.bold())
                             
-                            Text("The app captures your smile and saves it!")
+                            Text(!showCapturedMessage ? "The app captures your smile and saves it!" : "")
                                 .font(.system(size: 15))
                         }
                         .onAppear {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                                 withAnimation {
-                                    hasHiddenSmileMessage = true
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                    withAnimation {
+                                    if showCapturedMessage {
                                         hasHiddenSmileMessage = false
+                                    } else {
+                                        hasHiddenSmileMessage = true
                                     }
+                                    
                                 }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                        withAnimation {
+                                            hasHiddenSmileMessage = false
+                                        }
+                                    }
+
                             }
-   
+                            
                         }
                         .foregroundStyle(.black)
                         .frame(width: 328, height: 126)
@@ -122,23 +132,24 @@ struct CameraView: View {
                     HStack {
                         if isExpressionDetectionEnabled == false {
                             Button {
-                               showingGallery = true
+                                showingGallery = true
                             } label: {
-                               if let image = lastPhoto {
-                                   Image(uiImage: image)
-                                       .resizable()
-                                       .scaledToFill()
-                                       .frame(width: 60, height: 60)
-                                       .clipShape(RoundedRectangle(cornerRadius: 10))
-                                       .padding(.leading)
-                               } else {
-                                   Rectangle()
-                                       .fill(Color.gray)
-                                       .frame(width: 60, height: 60)
-                                       .clipShape(RoundedRectangle(cornerRadius: 10))
-                                       .padding(.leading)
-                               }
+                                if let image = lastPhoto {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 60, height: 60)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .padding(.leading)
+                                } else {
+                                    Rectangle()
+                                        .fill(Color.gray)
+                                        .frame(width: 60, height: 60)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .padding(.leading)
+                                }
                             }
+                            .popoverTip(isSmileTipVisible ? ResultPhotoTip() : nil)
                         }else{
                             Rectangle()
                                 .fill(Color.black)
@@ -146,7 +157,7 @@ struct CameraView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                                 .padding(.leading)
                         }
-
+                        
                         Spacer()
                         ZStack{
                             RoundedRectangle(cornerRadius: 100)
@@ -163,9 +174,15 @@ struct CameraView: View {
                                     isAnimateButtonStart = false
                                 }
                                 
-                                
+                                if !isExpressionDetectionEnabled {
+                                    isSmileTipVisible = true
+                                }
                                 
                                 isExpressionDetectionEnabled = !isExpressionDetectionEnabled
+                                
+                                if isExpressionDetectionEnabled == false && firstTry {
+                                    firstTry = false
+                                }
                                 
                                 if isExpressionDetectionEnabled {
                                     photoCounter = 0
@@ -183,21 +200,24 @@ struct CameraView: View {
                                 }
                             }) {
                                 ZStack {
+                                    Circle()
+                                        .stroke(Color.white, lineWidth: 4)
+                                        .frame(width: 70, height: 70)
+                                    
+                                    
+                                    if isExpressionDetectionEnabled {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.red)
+                                            .frame(width: 40, height: 40)
+                                    } else {
                                         Circle()
-                                            .stroke(Color.white, lineWidth: 4)
-                                            .frame(width: 70, height: 70)
-                                        
-                                        if isExpressionDetectionEnabled {
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .fill(Color.red)
-                                                .frame(width: 40, height: 40)
-                                        } else {
-                                            Circle()
-                                                .fill(Color.red)
-                                                .frame(width: 60, height: 60)
-                                        }
+                                            .fill(Color.red)
+                                            .frame(width: 60, height: 60)
+                                    }
                                     
                                 }
+                                .popoverTip(tipAfterButtonStopRecord ? StopButtonTip() : nil)
+                                //
                                 .popoverTip(homeScreenTip.currentTip as? ButtonTip)
                             }
                             
@@ -248,7 +268,7 @@ struct CameraView: View {
             }
             .onChange(of: showingGallery) { newValue in
                 if newValue == false {
-//                    loadPhotos() 
+                    //                    loadPhotos()
                 }
             }
             .onChange(of: faces) { newFaces in
@@ -256,8 +276,8 @@ struct CameraView: View {
                 numberOfSmiling = newFaces.filter { $0.expression.lowercased().contains("smiling") }.count
                 
                 let now = Date()
-//                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
-                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 3 {
+                //                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
+                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 10 {
                     
                     //capture
                     lastCaptureTime = now
@@ -272,18 +292,24 @@ struct CameraView: View {
                             lastPhoto = croppedImage
                             savePhotoToAppStorage(croppedImage)
                             photoCounter += 1
+                            
+                            
+                            showCapturedMessage = true
+                            
+                            
+                            //                            showCapturedMessage = false
+                            
                         } else {
                             print("No image captured")
                         }
                     }
                     
+                    
+                    
                     //selesai capture pertama kali
                     // stop
-                    if firstTry {
-                        firstTry = false
-                        
-                        stopTimer()
-                        resetTimer()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        tipAfterButtonStopRecord = true
                     }
                     
                 }
@@ -294,11 +320,11 @@ struct CameraView: View {
     func savePhotoToAppStorage(_ image: UIImage) {
         let fileManager = FileManager.default
         guard let data = image.jpegData(compressionQuality: 0.95) else { return }
-
+        
         let filename = UUID().uuidString + ".jpg"
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
         let fileURL = documentsURL.appendingPathComponent(filename)
-
+        
         do {
             try data.write(to: fileURL)
             print("✅ Saved to: \(fileURL.lastPathComponent)")
@@ -345,7 +371,7 @@ struct CameraView: View {
         timer = nil
         isRunning = false
     }
-
+    
     func resetTimer() {
         timeRemaining = 3600
     }

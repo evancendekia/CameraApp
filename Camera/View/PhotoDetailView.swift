@@ -88,6 +88,7 @@ struct PhotoDetailView: View {
                         .padding(8)
                         .background(Circle().fill(Color.gray.opacity(0.2)))
                 }
+                .popoverTip(saveTip)
                 
                 Spacer()
                 

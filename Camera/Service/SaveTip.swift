@@ -9,16 +9,17 @@ import TipKit
 
 struct SaveTip: Tip {
     var title: Text {
-        Text("Save Button")
-    }
-    
-    var message: Text? {
         Text("Tap the save button to save your Photos.")
+            .font(.body)
     }
+//
+//    var message: Text? {
+//        Text("Tap the save button to save your Photos.")
+//    }
     
     var options: [TipOption]{
         [
-            Tips.MaxDisplayCount(2)
+            Tips.MaxDisplayCount(1)
         ]
     }
     

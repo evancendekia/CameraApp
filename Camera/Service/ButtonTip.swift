@@ -10,12 +10,14 @@ import TipKit
 
 struct ButtonTip: Tip {
     var title: Text {
-        Text("Start Button")
+        Text("Tap to start automatic photo capture hands free and hassle-free")
+            .font(.body)
+            
     }
     
-    var message: Text? {
-        Text("Tap to start automatic photo capture hands free and hassle-free")
-    }
+//    var message: Text? {
+//        Text("Tap to start automatic photo capture hands free and hassle-free")
+//    }
     
     var options: [TipOption] { [
         Tips.MaxDisplayCount(1),

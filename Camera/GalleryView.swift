@@ -114,7 +114,7 @@ struct GalleryView: View {
                     PhotoDetailView(photos: $photos,selectedIndex: $selectedIndex)
                 }
         }.alert(isPresented: $checkWelcome) {
-            Alert(title: Text("Welcome"), message: Text("Thank you for using this app!"), dismissButton: .default(Text("OK")))
+            Alert(title: Text("Library Photo!"), message: Text("Your photos will be stored in this library and will disappear in 24 hours."), dismissButton: .default(Text("Done")))
         }
         .confirmationDialog(
             "Delete Photos",

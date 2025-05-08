@@ -10,12 +10,13 @@ import TipKit
 
 struct ResultPhotoTip: Tip {
     var title: Text{
-        Text("Click here ")
+        Text("Click here to see your result Photo ")
+            .font(.body)
     }
     
-    var message: Text?{
-        Text("to see your result Photo")
-    }
+//    var message: Text?{
+//        Text("to see your result Photo")
+//    }
     
     var options: [TipOption]{
         [
