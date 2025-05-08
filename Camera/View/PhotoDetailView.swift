@@ -101,7 +101,6 @@ struct PhotoDetailView: View {
                         .background(Circle().fill(Color.gray.opacity(0.2)))
                 }
                 .popoverTip(deleteTip)
-                Spacer()
             }
             .padding()
             .font(.title2)
@@ -179,23 +178,43 @@ struct PhotoDetailView: View {
 
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootVC = windowScene.windows.first?.rootViewController {
-            
+
+            // For iPad support
+            if let popover = activityVC.popoverPresentationController {
+                popover.sourceView = rootVC.view
+                popover.sourceRect = CGRect(
+                    x: rootVC.view.bounds.midX,
+                    y: rootVC.view.bounds.midY,
+                    width: 0,
+                    height: 0
+                )
+                popover.permittedArrowDirections = []
+            }
+
             activityVC.completionWithItemsHandler = { activityType, completed, returnedItems, activityError in
                 if completed {
                     saveImageToSnaptifyAlbum(image: image) {
-                        // Setelah berhasil simpan, tampilkan alert
-                        let alert = UIAlertController(title: "Saved", message: "Image has been saved to Snaptify album.", preferredStyle: .alert)
-                        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                        DispatchQueue.main.async {
+                        // Delay alert slightly to wait for share sheet to dismiss cleanly
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            let alert = UIAlertController(
+                                title: "Saved",
+                                message: "Image has been saved to Snaptify album.",
+                                preferredStyle: .alert
+                            )
+                            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                             rootVC.present(alert, animated: true, completion: nil)
                         }
                     }
                 }
             }
 
-            rootVC.present(activityVC, animated: true, completion: nil)
+            // Delay slightly to prevent layout issues during modal presentation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                rootVC.present(activityVC, animated: true)
+            }
         }
     }
+
 
     // MARK: - Helper untuk menyimpan ke album Snaptify
     private func saveImageToSnaptifyAlbum(image: UIImage, completion: @escaping () -> Void) {

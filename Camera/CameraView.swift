@@ -55,20 +55,17 @@ struct CameraView: View {
                 // Camera Preview
 //                CameraPreview(session: cameraService.session)
 //                    .ignoresSafeArea()
-                Color.black.opacity(1)
-                    .ignoresSafeArea()
-                VStack{
-                    Spacer()
+                Color.black.opacity(1).ignoresSafeArea()
+                GeometryReader { geometry in
                     ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel,isExpressionDetectionEnabled: $isExpressionDetectionEnabled)
                         .aspectRatio(3/4, contentMode: .fit)
+//                        .aspectRatio(3/4, contentMode: .fill)
                         .clipped()
-                        .edgesIgnoringSafeArea(.all)
-                        .padding(.bottom, 120)
-                    Spacer()
-                    Spacer()
-                    Spacer()
-                    Spacer()
+                        .ignoresSafeArea()
+                        .padding(.bottom, 230)
+                        .position(x: geometry.size.width / 2, y: geometry.size.height * 5/8)
                 }
+                .ignoresSafeArea()
                 
                 GeometryReader { geometry in
                     Text(timeString(from: timeRemaining))
@@ -123,23 +120,31 @@ struct CameraView: View {
                     
                     
                     HStack {
-                        Button {
-                           showingGallery = true
-                        } label: {
-                           if let image = lastPhoto {
-                               Image(uiImage: image)
-                                   .resizable()
-                                   .scaledToFill()
-                                   .frame(width: 60, height: 60)
-                                   .clipShape(RoundedRectangle(cornerRadius: 10))
-                                   .padding(.leading)
-                           } else {
-                               Rectangle()
-                                   .fill(Color.gray)
-                                   .frame(width: 60, height: 60)
-                                   .clipShape(RoundedRectangle(cornerRadius: 10))
-                                   .padding(.leading)
-                           }
+                        if isExpressionDetectionEnabled == false {
+                            Button {
+                               showingGallery = true
+                            } label: {
+                               if let image = lastPhoto {
+                                   Image(uiImage: image)
+                                       .resizable()
+                                       .scaledToFill()
+                                       .frame(width: 60, height: 60)
+                                       .clipShape(RoundedRectangle(cornerRadius: 10))
+                                       .padding(.leading)
+                               } else {
+                                   Rectangle()
+                                       .fill(Color.gray)
+                                       .frame(width: 60, height: 60)
+                                       .clipShape(RoundedRectangle(cornerRadius: 10))
+                                       .padding(.leading)
+                               }
+                            }
+                        }else{
+                            Rectangle()
+                                .fill(Color.black)
+                                .frame(width: 60, height: 60)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .padding(.leading)
                         }
 
                         Spacer()
@@ -161,9 +166,7 @@ struct CameraView: View {
                                 
                                 
                                 isExpressionDetectionEnabled = !isExpressionDetectionEnabled
-                                if isExpressionDetectionEnabled == false && firstTry {
-                                    firstTry = false
-                                }
+                                
                                 if isExpressionDetectionEnabled {
                                     photoCounter = 0
                                     timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
@@ -276,8 +279,12 @@ struct CameraView: View {
                     
                     //selesai capture pertama kali
                     // stop
-                    stopTimer()
-                    resetTimer()
+                    if firstTry {
+                        firstTry = false
+                        
+                        stopTimer()
+                        resetTimer()
+                    }
                     
                 }
             }

@@ -37,7 +37,6 @@ struct GalleryView: View {
                     .padding()
                 }
                 
-                Spacer()
                     .navigationDestination(isPresented: $isFullScreen) {
                         PhotoDetailView(photos: $photos,selectedIndex: $selectedIndex)
                     }
@@ -53,6 +52,7 @@ struct GalleryView: View {
                             isWelcomeShow = true
                         }
                 }
+                Spacer()
     }
     
     
