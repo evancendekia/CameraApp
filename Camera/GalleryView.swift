@@ -10,42 +10,51 @@ struct GalleryView: View {
     @State private var currentPhotos: [UIImage] = []
     @State private var selectedIndex: Int = 0
     @State private var imageFileURLs: [URL] = []
-
+    @AppStorage("IsWelcomeShow") var isWelcomeShow: Bool = false
+    @State private var checkWelcome: Bool = false
+    
     @Query var takenPhotos: [TakenPhoto] = []
-
+    
     var body: some View {
-        VStack {
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                    ForEach(photos, id: \.self) { photo in
-                        Image(uiImage: photo)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 100, height: 100)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .onTapGesture {
-                                selectedPhoto = photo
-                                if let index = photos.firstIndex(of: photo) {
-                                    selectedIndex = index
+                VStack {
+                ScrollView(.vertical, showsIndicators: false) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
+                        ForEach(photos, id: \.self) { photo in
+                            Image(uiImage: photo)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .onTapGesture {
+                                    selectedPhoto = photo
+                                    if let index = photos.firstIndex(of: photo) {
+                                        selectedIndex = index
+                                    }
+                                    isFullScreen = true
                                 }
-                                isFullScreen = true
-                            }
+                        }
                     }
+                    .padding()
                 }
-                .padding()
-            }
-            
-            Spacer()
-            .navigationDestination(isPresented: $isFullScreen) {
-                PhotoDetailView(photos: $photos,selectedIndex: $selectedIndex)
-            }
-        }
-        .navigationBarTitle("Gallery", displayMode: .inline)
-        .onAppear {
-            loadImagesFromTakenPhotos()
-        }
+                
+                Spacer()
+                    .navigationDestination(isPresented: $isFullScreen) {
+                        PhotoDetailView(photos: $photos,selectedIndex: $selectedIndex)
+                    }
+                }.alert(isPresented: $checkWelcome) {
+                    Alert(title: Text("Welcome"), message: Text("Thank you for using this app!"), dismissButton: .default(Text("OK")))
+                }
+                .navigationBarTitle("Gallery", displayMode: .inline)
+                .onAppear {
+                    photos = []
+                    loadImagesFromTakenPhotos()
+                    if !isWelcomeShow {
+                            checkWelcome = true
+                            isWelcomeShow = true
+                        }
+                }
     }
-
+    
     
     private func loadImagesFromTakenPhotos() {
         let fileManager = FileManager.default
