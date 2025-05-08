@@ -179,34 +179,7 @@ struct CameraView: View {
                                     }
                                 }
                             Button(action: {
-                                withAnimation(){
-                                    isAnimateButtonStart = false
-                                }
-                                
-                                if !isExpressionDetectionEnabled {
-                                    isSmileTipVisible = true
-                                }
-                                
-                                isExpressionDetectionEnabled = !isExpressionDetectionEnabled
-                                
-                                if isExpressionDetectionEnabled == false && firstTry {
-                                    firstTry = false
-                                }
-                                
-                                if isExpressionDetectionEnabled {
-                                    photoCounter = 0
-                                    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                                        if timeRemaining > 0 {
-                                            timeRemaining -= 1
-                                        } else {
-                                            stopTimer()
-                                            showAlert = true
-                                        }
-                                    }
-                                }else{
-                                    stopTimer()
-                                    showAlert = true
-                                }
+                                actionButton()
                             }) {
                                 ZStack {
                                     Circle()
@@ -324,6 +297,39 @@ struct CameraView: View {
                     
                 }
             }
+        }
+    }
+    private func actionButton(){
+        withAnimation(){
+            isAnimateButtonStart = false
+        }
+        
+        if !isExpressionDetectionEnabled {
+            isSmileTipVisible = true
+        }
+        
+        isExpressionDetectionEnabled = !isExpressionDetectionEnabled
+        
+        if isExpressionDetectionEnabled == false && firstTry {
+            firstTry = false
+        }
+        
+        if isExpressionDetectionEnabled {
+            UIApplication.shared.isIdleTimerDisabled = true
+            photoCounter = 0
+            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                if timeRemaining > 0 {
+                    timeRemaining -= 1
+                } else {
+                    UIApplication.shared.isIdleTimerDisabled = false
+                    stopTimer()
+                    showAlert = true
+                }
+            }
+        }else{
+            UIApplication.shared.isIdleTimerDisabled = false
+            stopTimer()
+            showAlert = true
         }
     }
     private func loadLatestTakenPhotos() {
