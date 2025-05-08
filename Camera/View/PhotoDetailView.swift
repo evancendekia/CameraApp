@@ -1,174 +1,3 @@
-//import SwiftUI
-//import Photos
-//import UserNotifications
-//
-//
-//struct PhotoDetailView: View {
-////    @Binding var photoAssets: [PHAsset]
-//    @Binding var photos: [UIImage]
-//    @Binding var selectedIndex: Int
-//
-//    @Environment(\.presentationMode) var presentationMode
-//    @Environment(\.modelContext) var context
-//    
-//    @State private var showAlert = false
-//    @State private var alertMessage = ""
-//
-//    var body: some View {
-//        VStack(spacing: 0) {
-//            // Top Info Bar
-//            HStack {
-//                Button(action: {
-//                    presentationMode.wrappedValue.dismiss()
-//                }) {
-//                    Image(systemName: "chevron.left")
-//                        .font(.system(size: 20, weight: .medium))
-//                        .padding()
-//                }
-//                Spacer()
-//                VStack(spacing: 2) {
-////                    Text(getDayOfWeek(from: selectedIndex))
-////                        .font(.headline)
-////                    Text(getTimeString(from: selectedIndex))
-////                        .font(.subheadline)
-////                        .foregroundColor(.gray)
-//                    Text("Photo Preview")
-//                        .font(.headline)
-//                }
-//                Spacer()
-//                Spacer().frame(width: 44) // Balance the left back button
-//            }
-//
-//            // Main Image
-//            GeometryReader { geo in
-//                Image(uiImage: photos[selectedIndex])
-//                    .resizable()
-//                    .aspectRatio(contentMode: .fit)
-//                    .frame(width: geo.size.width, height: geo.size.height)
-//            }
-//
-//            // Thumbnails Strip
-//            ScrollView(.horizontal, showsIndicators: false) {
-//                HStack(spacing: 8) {
-//                    ForEach(photos.indices, id: \.self) { index in
-//                        Image(uiImage: photos[index])
-//                            .resizable()
-//                            .aspectRatio(contentMode: .fill)
-//                            .frame(width: 60, height: 60)
-//                            .clipShape(RoundedRectangle(cornerRadius: 6))
-//                            .overlay(
-//                                RoundedRectangle(cornerRadius: 6)
-//                                    .stroke(Color.blue, lineWidth: selectedIndex == index ? 2 : 0)
-//                            )
-//                            .onTapGesture {
-//                                selectedIndex = index
-//                            }
-//                    }
-//                }
-//                .padding(.horizontal)
-//            }
-//            .padding(.vertical, 5)
-//            .background(Color(UIColor.systemBackground))
-//
-//            // Bottom Toolbar
-//            HStack(spacing: 30) {
-//                Spacer()
-//                Button(action: { shareImage() }) {
-//                    Image(systemName: "square.and.arrow.up")
-//                }
-//                Spacer()
-////                Spacer()
-////                Button(action: { saveImage() }) {
-////                    Image(systemName: "arrow.down.to.line.alt") // Save icon
-////                }
-////                Spacer()
-////                Spacer()
-//                Button(action: { deleteImage() }) {
-//                    Image(systemName: "trash")
-//                }
-//                Spacer()
-//            }
-//            .padding(.bottom, 20)
-//            .padding(.top, 10)
-//            .font(.title2)
-//            .alert(isPresented: $showAlert) {
-//                Alert(title: Text("Success"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-//            }
-//        }
-//        .navigationBarHidden(true)
-//    }
-//
-//
-//    private func shareImage() {
-//        let image = photos[selectedIndex]
-//        let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-//        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-//           let rootVC = windowScene.windows.first?.rootViewController {
-//            rootVC.present(activityVC, animated: true, completion: nil)
-//        }
-//    }
-//
-//    private func deleteImage() {
-//        // You can extend this to remove from storage too
-//        photos.remove(at: selectedIndex)
-//        photos.
-////        photoAssets.remove(at: selectedIndex)
-//        presentationMode.wrappedValue.dismiss()
-//    }
-//
-//    private func saveImage() {
-//        let image = photos[selectedIndex]
-//        guard let imageData = image.jpegData(compressionQuality: 1.0) else {
-//            return
-//        }
-//
-//        // Request access to Photos if needed
-//        PHPhotoLibrary.requestAuthorization { status in
-//            if status == .authorized {
-//                // Create a specific album if it doesn't exist
-//                var album: PHAssetCollection?
-//                let fetchOptions = PHFetchOptions()
-//                fetchOptions.predicate = NSPredicate(format: "title == %@", "Apple Academy Challenge 2")
-//                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .albumRegular, options: fetchOptions)
-//                if let existingAlbum = collections.firstObject {
-//                    album = existingAlbum
-//                } else {
-//                    // Create a new album
-//                    PHPhotoLibrary.shared().performChanges({
-//                        PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: "Apple Academy Challenge 2")
-//                    }) { success, error in
-//                        if success, let newAlbum = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .albumRegular, options: fetchOptions).firstObject {
-//                            album = newAlbum
-//                            saveImageToAlbum(album: album)
-//                        }
-//                    }
-//                    return
-//                }
-//                saveImageToAlbum(album: album)
-//            }
-//        }
-//    }
-//
-//    private func saveImageToAlbum(album: PHAssetCollection?) {
-//        // Save the image to the specific album
-//        PHPhotoLibrary.shared().performChanges({
-//            if let album = album {
-//                let assetChangeRequest = PHAssetChangeRequest.creationRequestForAsset(from: photos[selectedIndex])
-//                let assetPlaceholder = assetChangeRequest.placeholderForCreatedAsset
-//                let albumChangeRequest = PHAssetCollectionChangeRequest(for: album)
-//                albumChangeRequest?.addAssets([assetPlaceholder!] as NSArray)
-//            }
-//        }) { success, error in
-//            if success {
-//                alertMessage = "Image saved to 'Apple Academy Challenge 2' album!"
-//            } else {
-//                alertMessage = "Failed to save image."
-//            }
-//            showAlert = true
-//        }
-//    }
-//}
-
 import SwiftUI
 import Photos
 import UserNotifications
@@ -202,24 +31,28 @@ struct PhotoDetailView: View {
                 VStack(spacing: 2) {
                     Text("Photo Preview")
                         .font(.headline)
+                        .foregroundStyle(.black)
                 }
                 Spacer()
                 Spacer().frame(width: 44) // Balance the left back button
             }
 
             // Main Image
-            GeometryReader { geo in
-                if selectedIndex < photos.count {
-                    Image(uiImage: photos[selectedIndex])
+            TabView(selection: $selectedIndex) {
+                ForEach(photos.indices, id: \.self) { index in
+                    Image(uiImage: photos[index])
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: geo.size.width, height: geo.size.height)
+                        .scaledToFit()
+                        .tag(index)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.white)
                 }
             }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
 
             // Thumbnails Strip
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack {
                     ForEach(photos.indices, id: \.self) { index in
                         Image(uiImage: photos[index])
                             .resizable()
@@ -234,33 +67,37 @@ struct PhotoDetailView: View {
                                 selectedIndex = index
                             }
                     }
-                }
-                .padding(.horizontal)
+                }.padding(.horizontal, 8)
+                    .padding(.top, 4)
+                    .padding(.bottom, 4)
             }
-            .padding(.vertical, 5)
-            .background(Color(UIColor.systemBackground))
+
 
             // Bottom Toolbar
-            HStack(spacing: 30) {
-                Spacer()
-                Button(action: { shareImage() }) {
+            HStack {
+                Button {
+                    shareImage()
+                }label: {
                     Image(systemName: "square.and.arrow.up")
                         .foregroundColor(.blue)
+                        .frame(width: 24, height: 24)
+                        .padding(8)
+                        .background(Circle().fill(Color.gray.opacity(0.2)))
                 }
+                
                 Spacer()
-                Button(action: { saveImage() }) {
-                    Image(systemName: "arrow.down.to.line.alt")
-                        .foregroundColor(.blue)
-                }
-                Spacer()
-                Button(action: { confirmDelete() }) {
+                
+                Button {
+                    confirmDelete()
+                }label: {
                     Image(systemName: "trash")
                         .foregroundColor(.red)
+                        .frame(width: 24, height: 24)
+                        .padding(8)
+                        .background(Circle().fill(Color.gray.opacity(0.2)))
                 }
-                Spacer()
             }
-            .padding(.bottom, 20)
-            .padding(.top, 10)
+            .padding()
             .font(.title2)
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Notification"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
@@ -274,16 +111,130 @@ struct PhotoDetailView: View {
                 Text("Are you sure you want to delete this photo? This action cannot be undone.")
             }
         }
+        .background(Color.white)
         .navigationBarHidden(true)
     }
 
+//    private func shareImage() {
+//        if selectedIndex < photos.count {
+//            let image = photos[selectedIndex]
+//            let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+//            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+//               let rootVC = windowScene.windows.first?.rootViewController {
+//                rootVC.present(activityVC, animated: true, completion: nil)
+//            }
+//        }
+//    }
+    
+//    private func shareImage() {
+//        if selectedIndex < photos.count {
+//            let image = photos[selectedIndex]
+//            let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+//
+//            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+//               let rootVC = windowScene.windows.first?.rootViewController {
+//                
+//                activityVC.completionWithItemsHandler = { activityType, completed, returnedItems, activityError in
+//                    if completed {
+//                        // Simpan ke galeri
+//                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+//                        
+//                        // Tampilkan alert konfirmasi setelah share selesai
+//                        let alert = UIAlertController(title: "Saved", message: "Image has been saved to your photo library.", preferredStyle: .alert)
+//                        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+//                        
+//                        // Penting: present alert di main queue
+//                        DispatchQueue.main.async {
+//                            rootVC.present(alert, animated: true, completion: nil)
+//                        }
+//                    }
+//                }
+//
+//                rootVC.present(activityVC, animated: true, completion: nil)
+//            }
+//        }
+//    }
+    
     private func shareImage() {
-        if selectedIndex < photos.count {
-            let image = photos[selectedIndex]
-            let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let rootVC = windowScene.windows.first?.rootViewController {
-                rootVC.present(activityVC, animated: true, completion: nil)
+        guard selectedIndex < photos.count else { return }
+        let image = photos[selectedIndex]
+        let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            
+            activityVC.completionWithItemsHandler = { activityType, completed, returnedItems, activityError in
+                if completed {
+                    saveImageToSnaptifyAlbum(image: image) {
+                        // Setelah berhasil simpan, tampilkan alert
+                        let alert = UIAlertController(title: "Saved", message: "Image has been saved to Snaptify album.", preferredStyle: .alert)
+                        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                        DispatchQueue.main.async {
+                            rootVC.present(alert, animated: true, completion: nil)
+                        }
+                    }
+                }
+            }
+
+            rootVC.present(activityVC, animated: true, completion: nil)
+        }
+    }
+
+    // MARK: - Helper untuk menyimpan ke album Snaptify
+    private func saveImageToSnaptifyAlbum(image: UIImage, completion: @escaping () -> Void) {
+        func getOrCreateAlbum(named name: String, completion: @escaping (PHAssetCollection?) -> Void) {
+            // Cari album yang sudah ada
+            let fetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
+            var existingAlbum: PHAssetCollection? = nil
+            fetchResult.enumerateObjects { collection, _, stop in
+                if collection.localizedTitle == name {
+                    existingAlbum = collection
+                    stop.pointee = true
+                }
+            }
+            
+            if let album = existingAlbum {
+                completion(album)
+                return
+            }
+
+            // Kalau belum ada, buat album baru
+            var albumPlaceholder: PHObjectPlaceholder?
+            PHPhotoLibrary.shared().performChanges({
+                let createAlbumRequest = PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: name)
+                albumPlaceholder = createAlbumRequest.placeholderForCreatedAssetCollection
+            }) { success, error in
+                if success, let placeholder = albumPlaceholder {
+                    let fetchResult = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [placeholder.localIdentifier], options: nil)
+                    completion(fetchResult.firstObject)
+                } else {
+                    print("Gagal membuat album: \(error?.localizedDescription ?? "unknown error")")
+                    completion(nil)
+                }
+            }
+        }
+
+        // Simpan ke album
+        PHPhotoLibrary.requestAuthorization { status in
+            guard status == .authorized || status == .limited else { return }
+
+            getOrCreateAlbum(named: "Snaptify") { album in
+                guard let album = album else { return }
+
+                PHPhotoLibrary.shared().performChanges({
+                    let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
+                    if let albumChangeRequest = PHAssetCollectionChangeRequest(for: album),
+                       let assetPlaceholder = creationRequest.placeholderForCreatedAsset {
+                        let fastEnumeration = NSArray(array: [assetPlaceholder])
+                        albumChangeRequest.addAssets(fastEnumeration)
+                    }
+                }) { success, error in
+                    if success {
+                        completion()
+                    } else {
+                        print("Error saving to album: \(error?.localizedDescription ?? "unknown")")
+                    }
+                }
             }
         }
     }
@@ -355,71 +306,5 @@ struct PhotoDetailView: View {
         }
         
         return nil
-    }
-
-    private func saveImage() {
-        guard selectedIndex < photos.count else { return }
-        let image = photos[selectedIndex]
-        
-        PHPhotoLibrary.requestAuthorization { status in
-            if status == .authorized {
-                // Create a specific album if it doesn't exist
-                let albumName = "Camera App Photos"
-                var album: PHAssetCollection?
-                
-                let fetchOptions = PHFetchOptions()
-                fetchOptions.predicate = NSPredicate(format: "title == %@", albumName)
-                let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .albumRegular, options: fetchOptions)
-                
-                if let existingAlbum = collections.firstObject {
-                    album = existingAlbum
-                    self.saveImageToPhotoLibrary(image: image, album: album)
-                } else {
-                    // Create new album
-                    PHPhotoLibrary.shared().performChanges({
-                        PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: albumName)
-                    }) { success, error in
-                        if success {
-                            // Fetch the newly created album
-                            let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .albumRegular, options: fetchOptions)
-                            album = collections.firstObject
-                            self.saveImageToPhotoLibrary(image: image, album: album)
-                        } else {
-                            DispatchQueue.main.async {
-                                self.alertMessage = "Failed to create album: \(error?.localizedDescription ?? "Unknown error")"
-                                self.showAlert = true
-                            }
-                        }
-                    }
-                }
-            } else {
-                DispatchQueue.main.async {
-                    self.alertMessage = "Photo library access denied. Please enable it in Settings."
-                    self.showAlert = true
-                }
-            }
-        }
-    }
-
-    private func saveImageToPhotoLibrary(image: UIImage, album: PHAssetCollection?) {
-        PHPhotoLibrary.shared().performChanges({
-            // Create asset request for the image
-            let assetRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
-            
-            // Add to album if we have one
-            if let album = album, let assetPlaceholder = assetRequest.placeholderForCreatedAsset {
-                let albumChangeRequest = PHAssetCollectionChangeRequest(for: album)
-                albumChangeRequest?.addAssets([assetPlaceholder] as NSArray)
-            }
-        }) { success, error in
-            DispatchQueue.main.async {
-                if success {
-                    self.alertMessage = "Photo saved to library successfully!"
-                } else {
-                    self.alertMessage = "Failed to save photo: \(error?.localizedDescription ?? "Unknown error")"
-                }
-                self.showAlert = true
-            }
-        }
     }
 }
