@@ -1,9 +1,18 @@
 import SwiftUI
 import Photos
 import TipKit
+import SwiftData
 
 
 struct CameraView: View {
+    
+    @Query(sort: [SortDescriptor(\TakenPhoto.timestamp, order: .reverse)])
+    var takenPhotos: [TakenPhoto]
+
+    var latestPhoto: TakenPhoto? {
+        takenPhotos.first
+    }
+    
     @StateObject var cameraService = CameraService()
     @State private var lastPhoto: UIImage?
     @State private var showingGallery = false
@@ -258,6 +267,7 @@ struct CameraView: View {
                 )
             }
             .onAppear {
+                loadLatestTakenPhotos()
                 arViewModel.restartSession()
                 Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
                     let now = Date()
@@ -316,7 +326,32 @@ struct CameraView: View {
             }
         }
     }
-    
+    private func loadLatestTakenPhotos() {
+        let fileManager = FileManager.default
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        print("📂 Attempting to load photos from: \(documentsURL.path)")
+        if let photo = latestPhoto {
+            let fileURL = documentsURL.appendingPathComponent(photo.filename)
+            
+            if fileManager.fileExists(atPath: fileURL.path) {
+                do {
+                    let data = try Data(contentsOf: fileURL)
+                    if let image = UIImage(data: data) {
+                        
+                        print("lastPhoto",lastPhoto)
+                        DispatchQueue.main.async {
+                            self.lastPhoto = image
+                        }
+                    }
+                } catch {
+                    print("Error loading image data for \(photo.filename): \(error.localizedDescription)")
+                }
+                
+            }
+            
+        }
+    }
     func savePhotoToAppStorage(_ image: UIImage) {
         let fileManager = FileManager.default
         guard let data = image.jpegData(compressionQuality: 0.95) else { return }
