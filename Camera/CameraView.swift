@@ -1,9 +1,18 @@
 import SwiftUI
 import Photos
 import TipKit
+import SwiftData
 
 
 struct CameraView: View {
+    
+    @Query(sort: [SortDescriptor(\TakenPhoto.timestamp, order: .reverse)])
+    var takenPhotos: [TakenPhoto]
+
+    var latestPhoto: TakenPhoto? {
+        takenPhotos.first
+    }
+    
     @StateObject var cameraService = CameraService()
     @State private var lastPhoto: UIImage?
     @State private var showingGallery = false
@@ -87,8 +96,8 @@ struct CameraView: View {
                     .animation(.easeOut(duration: 0.2), value: showFlash)
                 VStack {
                     Spacer()
-                    //                    Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
-                    //                    Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
+                                        Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
+                                        Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
                     //                    List(faces) { face in
                     //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
                     //                    }
@@ -170,29 +179,7 @@ struct CameraView: View {
                                     }
                                 }
                             Button(action: {
-                                withAnimation(){
-                                    isAnimateButtonStart = false
-                                }
-                                isExpressionDetectionEnabled = !isExpressionDetectionEnabled
-                                
-                                if isExpressionDetectionEnabled == false && firstTry {
-                                    firstTry = false
-                                }
-                                
-                                if isExpressionDetectionEnabled {
-                                    photoCounter = 0
-                                    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                                        if timeRemaining > 0 {
-                                            timeRemaining -= 1
-                                        } else {
-                                            stopTimer()
-                                            showAlert = true
-                                        }
-                                    }
-                                }else{
-                                    stopTimer()
-                                    showAlert = true
-                                }
+                                actionButton()
                             }) {
                                 ZStack {
                                     Circle()
@@ -254,6 +241,7 @@ struct CameraView: View {
                 )
             }
             .onAppear {
+                loadLatestTakenPhotos()
                 arViewModel.restartSession()
                 Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
                     let now = Date()
@@ -273,20 +261,21 @@ struct CameraView: View {
                 
                 let now = Date()
                 //                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
-                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 10 {
+                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 3 {
                     
                     //capture
                     lastCaptureTime = now
-                    arViewModel.captureSnapshot { image in
-                        
+//                    arViewModel.captureSnapshot { image in
+                    arViewModel.captureHighResolutionPhoto{ image in
+                      
                         showFlash = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             showFlash = false
                         }
                         if let img = image {
-                            let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
-                            lastPhoto = croppedImage
-                            savePhotoToAppStorage(croppedImage)
+//                            let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
+                            lastPhoto = img
+                            savePhotoToAppStorage(img)
                             photoCounter += 1
                             
                             
@@ -308,7 +297,65 @@ struct CameraView: View {
             }
         }
     }
-    
+    private func actionButton(){
+        withAnimation(){
+            isAnimateButtonStart = false
+        }
+        
+        if !isExpressionDetectionEnabled {
+            isSmileTipVisible = true
+        }
+        
+        isExpressionDetectionEnabled = !isExpressionDetectionEnabled
+        
+        if isExpressionDetectionEnabled == false && firstTry {
+            firstTry = false
+        }
+        
+        if isExpressionDetectionEnabled {
+            UIApplication.shared.isIdleTimerDisabled = true
+            photoCounter = 0
+            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                if timeRemaining > 0 {
+                    timeRemaining -= 1
+                } else {
+                    UIApplication.shared.isIdleTimerDisabled = false
+                    stopTimer()
+                    showAlert = true
+                }
+            }
+        }else{
+            UIApplication.shared.isIdleTimerDisabled = false
+            stopTimer()
+            showAlert = true
+        }
+    }
+    private func loadLatestTakenPhotos() {
+        let fileManager = FileManager.default
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        print("📂 Attempting to load photos from: \(documentsURL.path)")
+        if let photo = latestPhoto {
+            let fileURL = documentsURL.appendingPathComponent(photo.filename)
+            
+            if fileManager.fileExists(atPath: fileURL.path) {
+                do {
+                    let data = try Data(contentsOf: fileURL)
+                    if let image = UIImage(data: data) {
+                        
+                        print("lastPhoto",lastPhoto)
+                        DispatchQueue.main.async {
+                            self.lastPhoto = image
+                        }
+                    }
+                } catch {
+                    print("Error loading image data for \(photo.filename): \(error.localizedDescription)")
+                }
+                
+            }
+            
+        }
+    }
     func savePhotoToAppStorage(_ image: UIImage) {
         let fileManager = FileManager.default
         guard let data = image.jpegData(compressionQuality: 0.95) else { return }

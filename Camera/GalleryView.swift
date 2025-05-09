@@ -78,6 +78,7 @@ struct GalleryView: View {
                 HStack {
                     Button(action: {
                         // logic for save selected photos
+                        shareImage()
                     }) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.title2)
@@ -154,11 +155,11 @@ struct GalleryView: View {
         let sortedIndexes = selectedIndexes.sorted(by: >)
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-
+        
         for index in sortedIndexes {
             let photoItem = photoItems[index]
             let fileURL = documentsURL.appendingPathComponent(photoItem.filename)
-
+            
             do {
                 if fileManager.fileExists(atPath: fileURL.path) {
                     try fileManager.removeItem(at: fileURL)
@@ -167,14 +168,126 @@ struct GalleryView: View {
             } catch {
                 print("❌ Could not delete file: \(error.localizedDescription)")
             }
-
+            
             photoItems.remove(at: index)
         }
-
+        
         selectedIndexes.removeAll()
         isMultiSelectMode = false
         photos = []
         loadImagesFromTakenPhotos()
+    }
+    
+    private func shareImage() {
+        // Only act if user selected multiple photos in multi-select mode
+        guard isMultiSelectMode, !selectedIndexes.isEmpty else { return }
+        
+        let imagesToShare = selectedIndexes.compactMap { index in
+            if index < photoItems.count {
+                return photoItems[index].image
+            }
+            return nil
+        }
+        
+        let activityVC = UIActivityViewController(activityItems: imagesToShare, applicationActivities: nil)
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            
+            if let popover = activityVC.popoverPresentationController {
+                popover.sourceView = rootVC.view
+                popover.sourceRect = CGRect(
+                    x: rootVC.view.bounds.midX,
+                    y: rootVC.view.bounds.midY,
+                    width: 0,
+                    height: 0
+                )
+                popover.permittedArrowDirections = []
+            }
+            
+            activityVC.completionWithItemsHandler = { activityType, completed, returnedItems, activityError in
+                if completed {
+                    for img in imagesToShare {
+                        saveImageToSnaptifyAlbum(image: img) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                let alert = UIAlertController(
+                                    title: "Saved",
+                                    message: "\(imagesToShare.count) photo\(imagesToShare.count > 1 ? "s" : "") saved to Snaptify album.",
+                                    preferredStyle: .alert
+                                )
+                                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                                rootVC.present(alert, animated: true, completion: nil)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                rootVC.present(activityVC, animated: true)
+            }
+        }
+        
+    }
+    
+    
+    // MARK: - Helper untuk menyimpan ke album Snaptify
+    private func saveImageToSnaptifyAlbum(image: UIImage, completion: @escaping () -> Void) {
+        func getOrCreateAlbum(named name: String, completion: @escaping (PHAssetCollection?) -> Void) {
+            // Cari album yang sudah ada
+            let fetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
+            var existingAlbum: PHAssetCollection? = nil
+            fetchResult.enumerateObjects { collection, _, stop in
+                if collection.localizedTitle == name {
+                    existingAlbum = collection
+                    stop.pointee = true
+                }
+            }
+            
+            if let album = existingAlbum {
+                completion(album)
+                return
+            }
+            
+            // Kalau belum ada, buat album baru
+            var albumPlaceholder: PHObjectPlaceholder?
+            PHPhotoLibrary.shared().performChanges({
+                let createAlbumRequest = PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: name)
+                albumPlaceholder = createAlbumRequest.placeholderForCreatedAssetCollection
+            }) { success, error in
+                if success, let placeholder = albumPlaceholder {
+                    let fetchResult = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [placeholder.localIdentifier], options: nil)
+                    completion(fetchResult.firstObject)
+                } else {
+                    print("Gagal membuat album: \(error?.localizedDescription ?? "unknown error")")
+                    completion(nil)
+                }
+            }
+        }
+        
+        // Simpan ke album
+        PHPhotoLibrary.requestAuthorization { status in
+            guard status == .authorized || status == .limited else { return }
+            
+            getOrCreateAlbum(named: "Snaptify") { album in
+                guard let album = album else { return }
+                
+                PHPhotoLibrary.shared().performChanges({
+                    let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
+                    if let albumChangeRequest = PHAssetCollectionChangeRequest(for: album),
+                       let assetPlaceholder = creationRequest.placeholderForCreatedAsset {
+                        let fastEnumeration = NSArray(array: [assetPlaceholder])
+                        albumChangeRequest.addAssets(fastEnumeration)
+                    }
+                }) { success, error in
+                    if success {
+                        completion()
+                    } else {
+                        print("Error saving to album: \(error?.localizedDescription ?? "unknown")")
+                    }
+                }
+            }
+        }
     }
     
     private func loadImagesFromTakenPhotos() {
