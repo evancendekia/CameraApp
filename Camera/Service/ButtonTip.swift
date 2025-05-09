@@ -10,7 +10,7 @@ import TipKit
 
 struct ButtonTip: Tip {
     var title: Text {
-        Text("Tap to start automatic photo capture hands free and hassle-free")
+        Text("Tap to start automatic photo capture hands free and hassle-free.")
             .font(.body)
             
     }

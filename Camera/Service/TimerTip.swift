@@ -10,7 +10,7 @@ import TipKit
 struct TimerTip: Tip {
     var title: Text {
         Text("Auto Capture is only available for 1 hour!")
-            .font(.body)
+            .font(.system(size: 17))
 //            .fontWeight(.bold)
 //            .frame(width: 200, height: 100)
 //            .TextAlignment()

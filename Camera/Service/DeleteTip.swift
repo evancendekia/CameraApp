@@ -10,7 +10,7 @@ import TipKit
 
 struct DeleteTip: Tip {
     var title: Text {
-        Text("Tap the delete button to remove photo.")
+        Text("Tap this button to remove photos.")
             .font(.body)
             
     }

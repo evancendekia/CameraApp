@@ -10,7 +10,7 @@ import TipKit
 
 struct ResultPhotoTip: Tip {
     var title: Text{
-        Text("Click here to see your result Photo ")
+        Text("Click here to see your result Photos.")
             .font(.body)
     }
     

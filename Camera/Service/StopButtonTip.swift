@@ -10,7 +10,7 @@ import TipKit
 
 struct StopButtonTip: Tip {
     var title: Text {
-        Text("Tap to stop automatic photo capture")
+        Text("Tap to stop automatic photo capture.")
             .font(.body)
     }
     

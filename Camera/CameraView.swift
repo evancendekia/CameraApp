@@ -173,11 +173,6 @@ struct CameraView: View {
                                 withAnimation(){
                                     isAnimateButtonStart = false
                                 }
-                                
-                                if !isExpressionDetectionEnabled {
-                                    isSmileTipVisible = true
-                                }
-                                
                                 isExpressionDetectionEnabled = !isExpressionDetectionEnabled
                                 
                                 if isExpressionDetectionEnabled == false && firstTry {
@@ -235,6 +230,7 @@ struct CameraView: View {
                     message: Text("You got total \(photoCounter) pictures. \n Don’t forget to see the result and pick your best moment"),
                     dismissButton: .default(Text("OK"), action: {
                         resetTimer()
+                        isSmileTipVisible = true
                     })
                 )
             }
@@ -295,10 +291,6 @@ struct CameraView: View {
                             
                             
                             showCapturedMessage = true
-                            
-                            
-                            //                            showCapturedMessage = false
-                            
                         } else {
                             print("No image captured")
                         }

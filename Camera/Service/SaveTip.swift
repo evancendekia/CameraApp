@@ -9,7 +9,7 @@ import TipKit
 
 struct SaveTip: Tip {
     var title: Text {
-        Text("Tap the save button to save your Photos.")
+        Text("Tap this button to save your Photos.")
             .font(.body)
     }
 //
