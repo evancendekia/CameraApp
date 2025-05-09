@@ -260,7 +260,7 @@ struct CameraView: View {
                 
                 let now = Date()
                 //                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
-                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 10 {
+                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 3 {
                     
                     //capture
                     lastCaptureTime = now
