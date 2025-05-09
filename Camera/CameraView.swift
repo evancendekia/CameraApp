@@ -96,8 +96,8 @@ struct CameraView: View {
                     .animation(.easeOut(duration: 0.2), value: showFlash)
                 VStack {
                     Spacer()
-                                        Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
-                                        Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
+//                                        Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
+//                                        Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
                     //                    List(faces) { face in
                     //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
                     //                    }
@@ -265,8 +265,8 @@ struct CameraView: View {
                     
                     //capture
                     lastCaptureTime = now
-//                    arViewModel.captureSnapshot { image in
-                    arViewModel.captureHighResolutionPhoto{ image in
+                    arViewModel.captureSnapshot { image in
+//                    arViewModel.captureHighResolutionPhoto{ image in
                       
                         showFlash = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -302,9 +302,9 @@ struct CameraView: View {
             isAnimateButtonStart = false
         }
         
-        if !isExpressionDetectionEnabled {
-            isSmileTipVisible = true
-        }
+//        if !isExpressionDetectionEnabled {
+//            isSmileTipVisible = true
+//        }
         
         isExpressionDetectionEnabled = !isExpressionDetectionEnabled
         
