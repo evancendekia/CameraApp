@@ -169,15 +169,15 @@ struct CameraView: View {
                         
                         Spacer()
                         ZStack{
-                            RoundedRectangle(cornerRadius: 100)
-                                .fill(isAnimateButtonStart ? Color.white: .clear)
-                                .frame(width: 85, height: 85)
-                                .blur(radius: isAnimateButtonStart ? 20 : 0)
-                                .onAppear {
-                                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)){
-                                        isAnimateButtonStart = true
-                                    }
-                                }
+//                            RoundedRectangle(cornerRadius: 100)
+//                                .fill(isAnimateButtonStart ? Color.white: .clear)
+//                                .frame(width: 85, height: 85)
+//                                .blur(radius: isAnimateButtonStart ? 20 : 0)
+//                                .onAppear {
+//                                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)){
+//                                        isAnimateButtonStart = true
+//                                    }
+//                                }
                             Button(action: {
                                 actionButton()
                             }) {
