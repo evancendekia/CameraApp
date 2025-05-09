@@ -12,7 +12,6 @@ import SwiftData
 struct CameraApp: App {
     var modelContainerTakenPhoto: ModelContainer {
         let modelContainer = try! ModelContainer(for: TakenPhoto.self)
-        
 //        let taken3 = TakenPhoto(id: UUID(), timestamp: Date(), filename: "E84C582B-07F2-4D43-9C3C-BF153F063D9F.jpg", session: "testsessionid")
 //        let taken4 = TakenPhoto(id: UUID(), timestamp: Date(), filename: "6DFA2241-49D1-4C2C-94EB-8B670C7BD65A.jpg", session: "testsessionid")
 //        let taken5 = TakenPhoto(id: UUID(), timestamp: Date(), filename: "B5CD2663-11AA-4762-AF39-58FD2F3E30CD.jpg", session: "testsessionid")

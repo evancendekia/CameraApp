@@ -223,7 +223,7 @@ struct CameraView: View {
             }
             .task {
                 do {
-                    try Tips.resetDatastore()
+//                    try Tips.resetDatastore()
                     try Tips.configure([
                         .datastoreLocation(.applicationDefault),
                     ])
