@@ -81,7 +81,9 @@ struct CameraView: View {
                 
                 GeometryReader { geometry in
                     Text(timeString(from: timeRemaining))
-                        .font(.system(size: 32, design: .monospaced))
+                        .font(.system(size: 32))
+                        .background(isExpressionDetectionEnabled ? Color(.red) : .clear)
+                        .cornerRadius(10)
                         .popoverTip(homeScreenTip.currentTip as? TimerTip)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, alignment: .center)
