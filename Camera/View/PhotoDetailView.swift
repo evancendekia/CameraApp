@@ -7,19 +7,19 @@ import TipKit
 struct PhotoDetailView: View {
     @Binding var photos: [UIImage]
     @Binding var selectedIndex: Int
-
+    
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.modelContext) var modelContext
     
     @Query var takenPhotos: [TakenPhoto] = []
-
+    
     @State private var saveTip = SaveTip()
     @State private var deleteTip = DeleteTip()
     
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var showDeleteConfirmation = false
-
+    
     var body: some View {
         VStack(spacing: 0) {
             // Top Info Bar
@@ -40,7 +40,7 @@ struct PhotoDetailView: View {
                 Spacer()
                 Spacer().frame(width: 44) // Balance the left back button
             }
-
+            
             // Main Image
             TabView(selection: $selectedIndex) {
                 ForEach(photos.indices, id: \.self) { index in
@@ -53,30 +53,36 @@ struct PhotoDetailView: View {
                 }
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-
+            
             // Thumbnails Strip
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack {
-                    ForEach(photos.indices, id: \.self) { index in
-                        Image(uiImage: photos[index])
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 60, height: 60)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(Color.blue, lineWidth: selectedIndex == index ? 2 : 0)
-                            )
-                            .onTapGesture {
-                                selectedIndex = index
-                            }
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        ForEach(photos.indices, id: \.self) { index in
+                            Image(uiImage: photos[index])
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 60, height: 60)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.blue, lineWidth: selectedIndex == index ? 2 : 0)
+                                )
+                                .id(index) // penting agar bisa discroll ke sini
+                                .onTapGesture {
+                                    withAnimation {
+                                        selectedIndex = index
+                                        proxy.scrollTo(index, anchor: .center) // scroll otomatis
+                                    }
+                                }
+                        }
                     }
-                }.padding(.horizontal, 8)
-                    .padding(.top, 4)
-                    .padding(.bottom, 4)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                }
             }
-
-
+            
+            
             // Bottom Toolbar
             HStack {
                 Button {
@@ -105,9 +111,6 @@ struct PhotoDetailView: View {
             }
             .padding()
             .font(.title2)
-            .alert(isPresented: $showAlert) {
-                Alert(title: Text("Notification"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-            }
             .confirmationDialog("Delete Photo", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
                 Button("Delete", role: .destructive) {
                     deleteImage()
@@ -131,55 +134,55 @@ struct PhotoDetailView: View {
         .background(Color.white)
         .navigationBarHidden(true)
     }
-
-//    private func shareImage() {
-//        if selectedIndex < photos.count {
-//            let image = photos[selectedIndex]
-//            let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-//            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-//               let rootVC = windowScene.windows.first?.rootViewController {
-//                rootVC.present(activityVC, animated: true, completion: nil)
-//            }
-//        }
-//    }
     
-//    private func shareImage() {
-//        if selectedIndex < photos.count {
-//            let image = photos[selectedIndex]
-//            let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-//
-//            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-//               let rootVC = windowScene.windows.first?.rootViewController {
-//                
-//                activityVC.completionWithItemsHandler = { activityType, completed, returnedItems, activityError in
-//                    if completed {
-//                        // Simpan ke galeri
-//                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-//                        
-//                        // Tampilkan alert konfirmasi setelah share selesai
-//                        let alert = UIAlertController(title: "Saved", message: "Image has been saved to your photo library.", preferredStyle: .alert)
-//                        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-//                        
-//                        // Penting: present alert di main queue
-//                        DispatchQueue.main.async {
-//                            rootVC.present(alert, animated: true, completion: nil)
-//                        }
-//                    }
-//                }
-//
-//                rootVC.present(activityVC, animated: true, completion: nil)
-//            }
-//        }
-//    }
+    //    private func shareImage() {
+    //        if selectedIndex < photos.count {
+    //            let image = photos[selectedIndex]
+    //            let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+    //            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+    //               let rootVC = windowScene.windows.first?.rootViewController {
+    //                rootVC.present(activityVC, animated: true, completion: nil)
+    //            }
+    //        }
+    //    }
+    
+    //    private func shareImage() {
+    //        if selectedIndex < photos.count {
+    //            let image = photos[selectedIndex]
+    //            let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+    //
+    //            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+    //               let rootVC = windowScene.windows.first?.rootViewController {
+    //
+    //                activityVC.completionWithItemsHandler = { activityType, completed, returnedItems, activityError in
+    //                    if completed {
+    //                        // Simpan ke galeri
+    //                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+    //
+    //                        // Tampilkan alert konfirmasi setelah share selesai
+    //                        let alert = UIAlertController(title: "Saved", message: "Image has been saved to your photo library.", preferredStyle: .alert)
+    //                        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+    //
+    //                        // Penting: present alert di main queue
+    //                        DispatchQueue.main.async {
+    //                            rootVC.present(alert, animated: true, completion: nil)
+    //                        }
+    //                    }
+    //                }
+    //
+    //                rootVC.present(activityVC, animated: true, completion: nil)
+    //            }
+    //        }
+    //    }
     
     private func shareImage() {
         guard selectedIndex < photos.count else { return }
         let image = photos[selectedIndex]
         let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
-
+        
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootVC = windowScene.windows.first?.rootViewController {
-
+            
             // For iPad support
             if let popover = activityVC.popoverPresentationController {
                 popover.sourceView = rootVC.view
@@ -191,7 +194,7 @@ struct PhotoDetailView: View {
                 )
                 popover.permittedArrowDirections = []
             }
-
+            
             activityVC.completionWithItemsHandler = { activityType, completed, returnedItems, activityError in
                 if completed {
                     saveImageToSnaptifyAlbum(image: image) {
@@ -208,15 +211,15 @@ struct PhotoDetailView: View {
                     }
                 }
             }
-
+            
             // Delay slightly to prevent layout issues during modal presentation
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 rootVC.present(activityVC, animated: true)
             }
         }
     }
-
-
+    
+    
     // MARK: - Helper untuk menyimpan ke album Snaptify
     private func saveImageToSnaptifyAlbum(image: UIImage, completion: @escaping () -> Void) {
         func getOrCreateAlbum(named name: String, completion: @escaping (PHAssetCollection?) -> Void) {
@@ -234,7 +237,7 @@ struct PhotoDetailView: View {
                 completion(album)
                 return
             }
-
+            
             // Kalau belum ada, buat album baru
             var albumPlaceholder: PHObjectPlaceholder?
             PHPhotoLibrary.shared().performChanges({
@@ -250,14 +253,14 @@ struct PhotoDetailView: View {
                 }
             }
         }
-
+        
         // Simpan ke album
         PHPhotoLibrary.requestAuthorization { status in
             guard status == .authorized || status == .limited else { return }
-
+            
             getOrCreateAlbum(named: "Snaptify") { album in
                 guard let album = album else { return }
-
+                
                 PHPhotoLibrary.shared().performChanges({
                     let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
                     if let albumChangeRequest = PHAssetCollectionChangeRequest(for: album),
@@ -279,7 +282,7 @@ struct PhotoDetailView: View {
     private func confirmDelete() {
         showDeleteConfirmation = true
     }
-
+    
     private func deleteImage() {
         guard selectedIndex < photos.count else { return }
         
@@ -325,7 +328,7 @@ struct PhotoDetailView: View {
             showAlert = true
         }
     }
-
+    
     private func findTakenPhotoForCurrentImage(at index: Int) -> TakenPhoto? {
         // Since we don't have a direct link from image to takenPhoto record,
         // we need to find the corresponding TakenPhoto based on the order of loaded images

@@ -10,8 +10,8 @@ import SwiftData
 
 @main
 struct CameraApp: App {
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     var modelContainer: ModelContainer {
-        
         let schema = Schema([TakenPhoto.self, Session.self])
         let modelContainer = try! ModelContainer(for: schema)
 //        let taken3 = TakenPhoto(id: UUID(), timestamp: Date(), filename: "E84C582B-07F2-4D43-9C3C-BF153F063D9F.jpg", session: "testsessionid")
@@ -26,7 +26,13 @@ struct CameraApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                CameraView()
+                if hasSeenOnboarding {
+                    CameraView()
+                } else {
+                    OnBoarding()
+                        .preferredColorScheme(.dark)
+                }
+                
             }
         }
         .modelContainer(modelContainer)
