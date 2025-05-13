@@ -111,9 +111,6 @@ struct PhotoDetailView: View {
             }
             .padding()
             .font(.title2)
-            .alert(isPresented: $showAlert) {
-                Alert(title: Text("Notification"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-            }
             .confirmationDialog("Delete Photo", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
                 Button("Delete", role: .destructive) {
                     deleteImage()
