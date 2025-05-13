@@ -24,18 +24,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		3637868D2DC4AD85002FE7EF /* Camera.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Camera.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		3637869D2DC4AD87002FE7EF /* CameraTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CameraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		363786A72DC4AD87002FE7EF /* CameraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CameraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3637868D2DC4AD85002FE7EF /* Snaptify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Snaptify.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3637869D2DC4AD87002FE7EF /* SnaptifyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnaptifyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		363786A72DC4AD87002FE7EF /* SnaptifyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnaptifyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		363786C32DC4AF1E002FE7EF /* Exceptions for "Camera" folder in "Camera" target */ = {
+		363786C32DC4AF1E002FE7EF /* Exceptions for "Camera" folder in "Snaptify" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 3637868C2DC4AD85002FE7EF /* Camera */;
+			target = 3637868C2DC4AD85002FE7EF /* Snaptify */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -43,7 +43,7 @@
 		3637868F2DC4AD85002FE7EF /* Camera */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				363786C32DC4AF1E002FE7EF /* Exceptions for "Camera" folder in "Camera" target */,
+				363786C32DC4AF1E002FE7EF /* Exceptions for "Camera" folder in "Snaptify" target */,
 			);
 			path = Camera;
 			sourceTree = "<group>";
@@ -98,9 +98,9 @@
 		3637868E2DC4AD85002FE7EF /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3637868D2DC4AD85002FE7EF /* Camera.app */,
-				3637869D2DC4AD87002FE7EF /* CameraTests.xctest */,
-				363786A72DC4AD87002FE7EF /* CameraUITests.xctest */,
+				3637868D2DC4AD85002FE7EF /* Snaptify.app */,
+				3637869D2DC4AD87002FE7EF /* SnaptifyTests.xctest */,
+				363786A72DC4AD87002FE7EF /* SnaptifyUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,9 +108,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3637868C2DC4AD85002FE7EF /* Camera */ = {
+		3637868C2DC4AD85002FE7EF /* Snaptify */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 363786B12DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "Camera" */;
+			buildConfigurationList = 363786B12DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "Snaptify" */;
 			buildPhases = (
 				363786892DC4AD85002FE7EF /* Sources */,
 				3637868A2DC4AD85002FE7EF /* Frameworks */,
@@ -123,16 +123,16 @@
 			fileSystemSynchronizedGroups = (
 				3637868F2DC4AD85002FE7EF /* Camera */,
 			);
-			name = Camera;
+			name = Snaptify;
 			packageProductDependencies = (
 			);
 			productName = Camera;
-			productReference = 3637868D2DC4AD85002FE7EF /* Camera.app */;
+			productReference = 3637868D2DC4AD85002FE7EF /* Snaptify.app */;
 			productType = "com.apple.product-type.application";
 		};
-		3637869C2DC4AD87002FE7EF /* CameraTests */ = {
+		3637869C2DC4AD87002FE7EF /* SnaptifyTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 363786B42DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "CameraTests" */;
+			buildConfigurationList = 363786B42DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "SnaptifyTests" */;
 			buildPhases = (
 				363786992DC4AD87002FE7EF /* Sources */,
 				3637869A2DC4AD87002FE7EF /* Frameworks */,
@@ -146,16 +146,16 @@
 			fileSystemSynchronizedGroups = (
 				363786A02DC4AD87002FE7EF /* CameraTests */,
 			);
-			name = CameraTests;
+			name = SnaptifyTests;
 			packageProductDependencies = (
 			);
 			productName = CameraTests;
-			productReference = 3637869D2DC4AD87002FE7EF /* CameraTests.xctest */;
+			productReference = 3637869D2DC4AD87002FE7EF /* SnaptifyTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		363786A62DC4AD87002FE7EF /* CameraUITests */ = {
+		363786A62DC4AD87002FE7EF /* SnaptifyUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 363786B72DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "CameraUITests" */;
+			buildConfigurationList = 363786B72DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "SnaptifyUITests" */;
 			buildPhases = (
 				363786A32DC4AD87002FE7EF /* Sources */,
 				363786A42DC4AD87002FE7EF /* Frameworks */,
@@ -169,11 +169,11 @@
 			fileSystemSynchronizedGroups = (
 				363786AA2DC4AD87002FE7EF /* CameraUITests */,
 			);
-			name = CameraUITests;
+			name = SnaptifyUITests;
 			packageProductDependencies = (
 			);
 			productName = CameraUITests;
-			productReference = 363786A72DC4AD87002FE7EF /* CameraUITests.xctest */;
+			productReference = 363786A72DC4AD87002FE7EF /* SnaptifyUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -199,7 +199,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 363786882DC4AD85002FE7EF /* Build configuration list for PBXProject "Camera" */;
+			buildConfigurationList = 363786882DC4AD85002FE7EF /* Build configuration list for PBXProject "Snaptify" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -213,9 +213,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				3637868C2DC4AD85002FE7EF /* Camera */,
-				3637869C2DC4AD87002FE7EF /* CameraTests */,
-				363786A62DC4AD87002FE7EF /* CameraUITests */,
+				3637868C2DC4AD85002FE7EF /* Snaptify */,
+				3637869C2DC4AD87002FE7EF /* SnaptifyTests */,
+				363786A62DC4AD87002FE7EF /* SnaptifyUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -271,12 +271,12 @@
 /* Begin PBXTargetDependency section */
 		3637869F2DC4AD87002FE7EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 3637868C2DC4AD85002FE7EF /* Camera */;
+			target = 3637868C2DC4AD85002FE7EF /* Snaptify */;
 			targetProxy = 3637869E2DC4AD87002FE7EF /* PBXContainerItemProxy */;
 		};
 		363786A92DC4AD87002FE7EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 3637868C2DC4AD85002FE7EF /* Camera */;
+			target = 3637868C2DC4AD85002FE7EF /* Snaptify */;
 			targetProxy = 363786A82DC4AD87002FE7EF /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -427,12 +427,16 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = Snaptify.Camera;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -462,12 +466,16 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = Snaptify.Camera;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -486,7 +494,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Camera.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Camera";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Snaptify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Snaptify";
 			};
 			name = Debug;
 		};
@@ -505,7 +513,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Camera.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Camera";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Snaptify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Snaptify";
 			};
 			name = Release;
 		};
@@ -546,7 +554,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		363786882DC4AD85002FE7EF /* Build configuration list for PBXProject "Camera" */ = {
+		363786882DC4AD85002FE7EF /* Build configuration list for PBXProject "Snaptify" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				363786AF2DC4AD87002FE7EF /* Debug */,
@@ -555,7 +563,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		363786B12DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "Camera" */ = {
+		363786B12DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "Snaptify" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				363786B22DC4AD87002FE7EF /* Debug */,
@@ -564,7 +572,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		363786B42DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "CameraTests" */ = {
+		363786B42DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "SnaptifyTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				363786B52DC4AD87002FE7EF /* Debug */,
@@ -573,7 +581,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		363786B72DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "CameraUITests" */ = {
+		363786B72DC4AD87002FE7EF /* Build configuration list for PBXNativeTarget "SnaptifyUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				363786B82DC4AD87002FE7EF /* Debug */,

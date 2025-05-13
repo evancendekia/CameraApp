@@ -68,7 +68,7 @@ struct OnBoarding: View {
                         .foregroundColor(.white)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.accentColor.opacity(0.85))
+                        .background(Color("SecondaryColor").opacity(0.85))
                         .cornerRadius(20)
                 }.padding(.horizontal)
             }.toolbar{

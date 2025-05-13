@@ -28,6 +28,7 @@ struct CameraApp: App {
             NavigationStack {
                 if hasSeenOnboarding {
                     CameraView()
+                        .preferredColorScheme(.dark)
                 } else {
                     OnBoarding()
                         .preferredColorScheme(.dark)
