@@ -8,7 +8,17 @@ struct PhotoItem: Identifiable, Equatable {
     let filename: String
 }
 
+struct allSessionPhotos: Identifiable {
+    var id: UUID
+    let session: String
+    let sessionNumber: Int
+    let time: Date
+    let sessionPhotos: [UIImage]
+}
+
 struct GalleryView: View {
+    
+    @Environment(\.modelContext) var context
     @State var photos: [UIImage]
     @Binding var photoAssets: [PHAsset]
     @Binding var isFullScreen: Bool
@@ -20,61 +30,112 @@ struct GalleryView: View {
     @State private var checkWelcome: Bool = false
     
     // MARK: state for multi-select image
-    @State private var selectedIndexes: Set<Int> = []
+    @State private var selectedPhotoIDs: Set<UUID> = []
     @State private var isMultiSelectMode: Bool = false
     @State private var showMultiSelectDeleteConfirmation = false
     @State var photoItems: [PhotoItem] = []
     
-    @Query var takenPhotos: [TakenPhoto] = []
+    @State var photosBySession: [allSessionPhotos] = []
+    @Query(sort: [SortDescriptor(\Session.createdDate, order: .forward)]) var sessions: [Session]
+    @Query(sort: [SortDescriptor(\TakenPhoto.timestamp, order: .reverse)]) var takenPhotos: [TakenPhoto]
+    
+    var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd MMMM yyyy"
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.timeZone = .current // Follows device time zone
+        return formatter
+    }
+    func countdownMessage(from date: Date) -> String {
+        let now = Date()
+        let triggerInterval: TimeInterval = 24 * 60 * 60 // 24 hours in seconds
+        let elapsed = now.timeIntervalSince(date)
+        
+
+        if elapsed <= triggerInterval {
+            let remaining = triggerInterval - elapsed
+            let hours = Int(remaining) / 3600
+//            let minutes = (Int(remaining) % 3600) / 60
+            
+            print("elapsed",elapsed)
+            print(date)
+            print("Your Photos in this session will be deleted in \(hours)h")
+            
+            return "Your Photos in this session will be deleted in \(hours)h"
+        }else{
+            return ""
+        }
+    }
     
     var body: some View {
         VStack {
             ScrollView(.vertical, showsIndicators: false) {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                    ForEach(Array(photos.enumerated()), id: \.offset) { index, photo in
-                        Image(uiImage: photo)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 100, height: 100)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .onTapGesture {
-                                if isMultiSelectMode {
-                                    if selectedIndexes.contains(index) {
-                                        selectedIndexes.remove(index)
-                                    } else {
-                                        selectedIndexes.insert(index)
+                ForEach(Array(photosBySession.enumerated()), id: \.element.id) { index, item in
+                    VStack(alignment: .leading){
+                        Text(dateFormatter.string(from: item.time) + " Session \(item.sessionNumber)")
+                            .fontWeight(.bold)
+                            .padding(.leading, 25)
+                        Text(countdownMessage(from: item.time))
+                            .font(.footnote)
+                            .padding(.leading, 25)
+                            .padding(.bottom, -15)
+                        
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
+                            
+                            ForEach(Array(item.sessionPhotos.enumerated()), id: \.offset) { index, photo in
+                                Image(uiImage: photo)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 100, height: 100)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .onTapGesture {
+                                        if isMultiSelectMode {
+                                            if let matchingItem = photoItems.first(where: { $0.image == photo }) {
+                                                let id = matchingItem.id
+                                                if selectedPhotoIDs.contains(id) {
+                                                    selectedPhotoIDs.remove(id)
+                                                } else {
+                                                    selectedPhotoIDs.insert(id)
+                                                }
+                                            }
+                                        } else {
+                                            selectedPhoto = photo
+                                            if let index = photos.firstIndex(of: photo) {
+                                                selectedIndex = index
+                                            }
+                                            isFullScreen = true
+                                        }
+                                        print("🥶 isMultiSelectMode: \(isMultiSelectMode)")
+                                        print("🥶 selectedPhotoIDs: \(selectedPhotoIDs)")
+                                        
                                     }
-                                } else {
-                                    selectedPhoto = photo
-                                    if let index = photos.firstIndex(of: photo) {
-                                        selectedIndex = index
-                                    }
-                                    isFullScreen = true
-                                }
-                                print("🥶 isMultiSelectMode: \(isMultiSelectMode)")
-                                print("🥶 selectedIndexes: \(selectedIndexes)")
+                                    .overlay(
+                                        Group {
+                                            if isMultiSelectMode, let matchingItem = photoItems.first(where: { $0.image == photo }),
+                                               selectedPhotoIDs.contains(matchingItem.id)
+ {
+                                                Color.black.opacity(0.4)
+                                                    .overlay(Image(systemName: "checkmark.circle.fill")
+                                                        .resizable()
+                                                        .foregroundColor(.white)
+                                                        .frame(width: 24, height: 24)
+                                                        .padding(6),
+                                                             alignment: .topTrailing
+                                                    )
+                                                    .allowsHitTesting(false)
+                                            }
+                                        }
+                                    )
                             }
-                            .overlay(
-                                Group {
-                                    if isMultiSelectMode && selectedIndexes.contains(index) {
-                                        Color.black.opacity(0.4)
-                                            .overlay(Image(systemName: "checkmark.circle.fill")
-                                                .resizable()
-                                                .foregroundColor(.white)
-                                                .frame(width: 24, height: 24)
-                                                .padding(6),
-                                                     alignment: .topTrailing
-                                            )
-                                            .allowsHitTesting(false)
-                                    }
-                                }
-                            )
+                        }
+                        .padding()
                     }
+                    
+                    
                 }
-                .padding()
             }
             
-            if isMultiSelectMode && !selectedIndexes.isEmpty {
+            if isMultiSelectMode && !selectedPhotoIDs.isEmpty {
                 HStack {
                     Button(action: {
                         // logic for save selected photos
@@ -90,7 +151,7 @@ struct GalleryView: View {
                     
                     Spacer()
                     
-                    Text("\(selectedIndexes.count) Photo\(selectedIndexes.count > 1 ? "s" : "") Selected")
+                    Text("\(selectedPhotoIDs.count) Photo\(selectedPhotoIDs.count > 1 ? "s" : "") Selected")
                         .fontWeight(.semibold)
                     
                     Spacer()
@@ -136,7 +197,7 @@ struct GalleryView: View {
                 Button(isMultiSelectMode ? "Done" : "Select") {
                     isMultiSelectMode.toggle()
                     if !isMultiSelectMode {
-                        selectedIndexes.removeAll()
+                        selectedPhotoIDs.removeAll()
                     }
                 }
             }
@@ -152,27 +213,26 @@ struct GalleryView: View {
     }
     
     func deleteSelectedPhotos() {
-        let sortedIndexes = selectedIndexes.sorted(by: >)
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
         
-        for index in sortedIndexes {
-            let photoItem = photoItems[index]
-            let fileURL = documentsURL.appendingPathComponent(photoItem.filename)
+        let itemsToDelete = photoItems.filter { selectedPhotoIDs.contains($0.id) }
+        for item in itemsToDelete {
+            let fileURL = documentsURL.appendingPathComponent(item.filename)
             
             do {
                 if fileManager.fileExists(atPath: fileURL.path) {
                     try fileManager.removeItem(at: fileURL)
-                    print("🗑️ Deleted file: \(photoItem.filename)")
+                    print("🗑️ Deleted file: \(item.filename)")
                 }
             } catch {
                 print("❌ Could not delete file: \(error.localizedDescription)")
             }
             
-            photoItems.remove(at: index)
+            photoItems.removeAll { selectedPhotoIDs.contains($0.id) }
         }
         
-        selectedIndexes.removeAll()
+        selectedPhotoIDs.removeAll()
         isMultiSelectMode = false
         photos = []
         loadImagesFromTakenPhotos()
@@ -180,14 +240,9 @@ struct GalleryView: View {
     
     private func shareImage() {
         // Only act if user selected multiple photos in multi-select mode
-        guard isMultiSelectMode, !selectedIndexes.isEmpty else { return }
-        
-        let imagesToShare = selectedIndexes.compactMap { index in
-            if index < photoItems.count {
-                return photoItems[index].image
-            }
-            return nil
-        }
+        guard isMultiSelectMode, !selectedPhotoIDs.isEmpty else { return }
+        let selectedItems = photoItems.filter { selectedPhotoIDs.contains($0.id) }
+        let imagesToShare = selectedItems.map { $0.image }
         
         let activityVC = UIActivityViewController(activityItems: imagesToShare, applicationActivities: nil)
         
@@ -293,30 +348,70 @@ struct GalleryView: View {
     private func loadImagesFromTakenPhotos() {
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        
         print("📂 Attempting to load photos from: \(documentsURL.path)")
-        print(takenPhotos)
-        for photo in takenPhotos {
-//            print("ID: \(photo.id), timeStamp: \(photo.timestamp), filename: \(photo.filename), sessionID: \(photo.session)")
-            let fileURL = documentsURL.appendingPathComponent(photo.filename)
+        
+        
+        var photosForSession : [UIImage] = []
+        var sessionCountByDay: [String: Int] = [:]
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        for session in sessions {
+            let sessionId = session.id
+            photosForSession = []
             
-            if fileManager.fileExists(atPath: fileURL.path) {
-                do {
-                    let data = try Data(contentsOf: fileURL)
-                    if let image = UIImage(data: data) {
-                        DispatchQueue.main.async {
-                            self.photos.insert(image, at: 0)
-                            self.photoItems.insert(PhotoItem(image: image, filename: photo.filename), at: 0)
-                        }
-                    } else {
-                        print("Could not decode image data for \(photo.filename)")
-                    }
-                } catch {
-                    print("Error loading image data for \(photo.filename): \(error.localizedDescription)")
-                }
-            } else {
-                print("😭 File not found: \(photo.filename) in Documents directory")
+            let descriptor = FetchDescriptor<TakenPhoto>(
+                predicate: #Predicate { $0.session == sessionId }
+            )
+            let photosOfSession: [TakenPhoto] = try! context.fetch(descriptor)
+            
+            if photosOfSession.isEmpty {
+                continue
             }
+                
+            for photo in photosOfSession {
+    //            print("ID: \(photo.id), timeStamp: \(photo.timestamp), filename: \(photo.filename), sessionID: \(photo.session)")
+                let fileURL = documentsURL.appendingPathComponent(photo.filename)
+                
+                if fileManager.fileExists(atPath: fileURL.path) {
+                    do {
+                        let data = try Data(contentsOf: fileURL)
+                        if let image = UIImage(data: data) {
+                            photosForSession.append(image)
+                            DispatchQueue.main.async {
+                                self.photoItems.insert(PhotoItem(image: image, filename: photo.filename), at: 0)
+                                self.photos.insert(image, at: 0)
+                            }
+                        } else {
+                            print("Could not decode image data for \(photo.filename)")
+                        }
+                    } catch {
+                        print("Error loading image data for \(photo.filename): \(error.localizedDescription)")
+                    }
+                } else {
+                    print("😭 File not found: \(photo.filename) in Documents directory")
+                }
+            }
+            
+            // Determine session number based on the date
+            let dateKey = dateFormatter.string(from: session.createdDate)
+            sessionCountByDay[dateKey, default: 0] += 1
+            let sessionNumber = sessionCountByDay[dateKey]!
+            
+            print("photosForSession",photosForSession.count)
+            self.photosBySession.insert(
+                allSessionPhotos(
+                    id: UUID(),
+                    session: sessionId,
+                    sessionNumber: sessionNumber,
+                    time: session.createdDate,
+                    sessionPhotos: photosForSession
+                ),
+                at: 0
+            )
+            print("PhotosBySession",photosBySession)
+            
+            
         }
     }
 }
