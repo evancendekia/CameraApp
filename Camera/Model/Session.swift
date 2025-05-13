@@ -6,9 +6,17 @@
 //
 
 import Foundation
+import SwiftData
 
-struct Session: Identifiable {
-    var id: Int
-    let createdDate: Date
-    var items: [Item]
+@Model
+class Session: Identifiable {
+    var id: String
+    var createdDate: Date
+    var finishedDate: Date?
+    
+    init(id: String, createdDate: Date, finishedDate: Date? = nil) {
+        self.id = id
+        self.createdDate = createdDate
+        self.finishedDate = finishedDate
+    }
 }

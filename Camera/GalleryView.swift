@@ -297,6 +297,7 @@ struct GalleryView: View {
         print("📂 Attempting to load photos from: \(documentsURL.path)")
         print(takenPhotos)
         for photo in takenPhotos {
+//            print("ID: \(photo.id), timeStamp: \(photo.timestamp), filename: \(photo.filename), sessionID: \(photo.session)")
             let fileURL = documentsURL.appendingPathComponent(photo.filename)
             
             if fileManager.fileExists(atPath: fileURL.path) {

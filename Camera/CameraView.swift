@@ -6,13 +6,15 @@ import SwiftData
 
 struct CameraView: View {
     
-    @Query(sort: [SortDescriptor(\TakenPhoto.timestamp, order: .reverse)])
-    var takenPhotos: [TakenPhoto]
+    
+    @Query(sort: [SortDescriptor(\Session.createdDate, order: .reverse)]) var sessions: [Session]
+    @Query(sort: [SortDescriptor(\TakenPhoto.timestamp, order: .reverse)]) var takenPhotos: [TakenPhoto]
 
     var latestPhoto: TakenPhoto? {
         takenPhotos.first
     }
     
+    @State private var currentSessionId: String = UUID().uuidString
     @StateObject var cameraService = CameraService()
     @State private var lastPhoto: UIImage?
     @State private var showingGallery = false
@@ -243,6 +245,10 @@ struct CameraView: View {
                 )
             }
             .onAppear {
+//                print("sessions",sessions)
+//                for session in sessions {
+//                    print("ID: \(session.id), Start: \(session.createdDate), End: \(session.finishedDate ?? Date())")
+//                }
                 loadLatestTakenPhotos()
                 arViewModel.restartSession()
                 Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
@@ -315,6 +321,14 @@ struct CameraView: View {
         }
         
         if isExpressionDetectionEnabled {
+            //save session
+            currentSessionId = UUID().uuidString
+            let theSession = Session(id: currentSessionId, createdDate: Date())
+            context.insert(theSession)
+            try! context.save()
+            
+            
+            
             UIApplication.shared.isIdleTimerDisabled = true
             photoCounter = 0
             timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
@@ -327,6 +341,22 @@ struct CameraView: View {
                 }
             }
         }else{
+            
+            let descriptor = FetchDescriptor<Session>(
+                predicate: #Predicate { $0.id == currentSessionId }
+            )
+            if let sessionToUpdate = try? context.fetch(descriptor).first {
+                sessionToUpdate.finishedDate = Date()
+               try? context.save()
+//               print("Session with id \(currentSessionId) updated.")
+           } else {
+//               print("Session with id \(currentSessionId) not found.")
+           }
+            
+//            for session in sessions {
+//                print("ID: \(session.id), Start: \(session.createdDate), End: \(session.finishedDate ?? Date())")
+//            }
+            
             UIApplication.shared.isIdleTimerDisabled = false
             stopTimer()
             showAlert = true
@@ -369,7 +399,7 @@ struct CameraView: View {
         do {
             try data.write(to: fileURL)
             print("✅ Saved to: \(fileURL.lastPathComponent)")
-            let thePhoto = TakenPhoto(id: UUID(), timestamp: Date(), filename: filename, session: "testsessionid")
+            let thePhoto = TakenPhoto(id: UUID(), timestamp: Date(), filename: filename, session: currentSessionId)
             context.insert(thePhoto)
             try! context.save()
             
