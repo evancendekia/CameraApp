@@ -259,8 +259,10 @@ struct CameraView: View {
                 }
             }
             .onChange(of: showingGallery) { newValue in
-                if newValue == false {
-                    //                    loadPhotos()
+                if newValue == true {
+                    arViewModel.pauseSession()
+                }else{
+                    arViewModel.restartSession()
                 }
             }
             .onChange(of: faces) { newFaces in
@@ -375,7 +377,7 @@ struct CameraView: View {
                     let data = try Data(contentsOf: fileURL)
                     if let image = UIImage(data: data) {
                         
-                        print("lastPhoto",lastPhoto)
+//                        print("lastPhoto",lastPhoto)
                         DispatchQueue.main.async {
                             self.lastPhoto = image
                         }

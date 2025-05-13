@@ -116,4 +116,9 @@ class ARViewModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
         config.maximumNumberOfTrackedFaces = ARFaceTrackingConfiguration.supportedNumberOfTrackedFaces
         arView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
     }
+    
+    func pauseSession(){
+        arView?.session.pause()
+        captureSession?.stopRunning()
+    }
 }
