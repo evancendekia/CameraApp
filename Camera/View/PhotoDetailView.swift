@@ -20,9 +20,6 @@ struct PhotoDetailView: View {
     @State private var alertMessage = ""
     @State private var showDeleteConfirmation = false
     
-    @State private var currentScale: CGFloat = 1.0
-    @State private var lastScale: CGFloat = 1.0
-    
     var body: some View {
         VStack(spacing: 0) {
             // Top Info Bar
@@ -49,28 +46,26 @@ struct PhotoDetailView: View {
             }
             
             // Main Image
-            //            TabView(selection: $selectedIndex) {
-            //                ForEach(photos.indices, id: \.self) { index in
-            //                    Image(uiImage: photos[index])
-            //                        .resizable()
-            //                        .scaledToFit()
-            //                        .tag(index)
-            //                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-            //                }
-            //            }
-            //            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+//                        TabView(selection: $selectedIndex) {
+//                            ForEach(photos.indices, id: \.self) { index in
+//                                GeometryReader { geometry in
+//                                    Image(uiImage: photos[index])
+//                                        .resizable()
+//                                        .scaledToFit()
+//                                        .tag(index)
+//                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+//                                }
+//                            }
+//                        }
+//                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            
             TabView(selection: $selectedIndex) {
                 ForEach(photos.indices, id: \.self) { index in
-                    ZoomView(image: photos[index], index: index)
-                        .tag(index)  // Added explicit tag here
+                    ZoomView(image: photos[index], currentIndex: index, index: $selectedIndex)
+                        .tag(index)
                 }
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            .onChange(of: selectedIndex) { oldValue, newValue in
-                // Reset zoom when changing images
-                currentScale = 1.0
-                lastScale = 1.0
-            }
             
             // Thumbnails Strip
             ScrollViewReader { proxy in
