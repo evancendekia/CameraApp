@@ -62,17 +62,15 @@ struct PhotoDetailView: View {
             TabView(selection: $selectedIndex) {
                 ForEach(photos.indices, id: \.self) { index in
                     ZoomView(image: photos[index], index: index)
-                       .tag(index)
+                        .tag(index)  // Added explicit tag here
                 }
-            }.tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                .onChange(of: selectedIndex) { oldValue, newValue in
-                    // Reset zoom when changing images
-                    currentScale = 1.0
-                    lastScale = 1.0
-                }
-            
-            
-            
+            }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .onChange(of: selectedIndex) { oldValue, newValue in
+                // Reset zoom when changing images
+                currentScale = 1.0
+                lastScale = 1.0
+            }
             
             // Thumbnails Strip
             ScrollViewReader { proxy in
