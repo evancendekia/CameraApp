@@ -52,7 +52,9 @@ struct CameraView: View {
         ResultPhotoTip()
     }
     
-    @State private var firstTry: Bool = true
+//    @State private var firstTry: Bool = true
+    
+    @AppStorage("firstTry") private var firstTry: Bool = false
     @State var isStopButtonTapped: Bool = false
     @State private var isSmileTipVisible: Bool = false
     @State private var disableButton = true
@@ -106,7 +108,7 @@ struct CameraView: View {
                     //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
                     //                    }
                     //                    .frame(maxHeight: 200)
-                    if isExpressionDetectionEnabled && !hasHiddenSmileMessage && firstTry{
+                    if isExpressionDetectionEnabled && !hasHiddenSmileMessage && !firstTry{
                         VStack {
                             Text(showCapturedMessage ? "Your smile is captured" : "Smile to get capture" )
                                 .font(.largeTitle.bold())
@@ -318,8 +320,8 @@ struct CameraView: View {
         
         isExpressionDetectionEnabled = !isExpressionDetectionEnabled
         
-        if isExpressionDetectionEnabled == false && firstTry {
-            firstTry = false
+        if isExpressionDetectionEnabled == false && !firstTry {
+            firstTry = true
         }
         
         if isExpressionDetectionEnabled {
