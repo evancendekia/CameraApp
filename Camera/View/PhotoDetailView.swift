@@ -33,9 +33,13 @@ struct PhotoDetailView: View {
                 }
                 Spacer()
                 VStack(spacing: 2) {
-                    Text("Photo Preview")
+                    Text(formatedDate(takenPhotos[selectedIndex].timestamp))
                         .font(.headline)
-                        .foregroundStyle(.black)
+                        .foregroundStyle(.white)
+                    
+                    Text(foramtedTime(takenPhotos[selectedIndex].timestamp))
+                        .font(.caption)
+                        .foregroundStyle(Color.gray)
                 }
                 Spacer()
                 Spacer().frame(width: 44) // Balance the left back button
@@ -49,7 +53,6 @@ struct PhotoDetailView: View {
                         .scaledToFit()
                         .tag(index)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.white)
                 }
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
@@ -130,9 +133,33 @@ struct PhotoDetailView: View {
                 
             }
         }
-        
-        .background(Color.white)
         .navigationBarHidden(true)
+    }
+    
+    private func formatedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_us")
+        let calendar = Calendar.current
+        let now = Date()
+
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else if let daysAgo = calendar.dateComponents([.day], from: date, to: now).day, daysAgo <= 7 {
+            formatter.dateFormat = "EEEE"
+            return formatter.string(from: date)
+        } else {
+            formatter.dateFormat = "d MMMM"
+            return formatter.string(from: date)
+        }
+    }
+    
+    private func foramtedTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "HH.mm"
+        return formatter.string(from: date)
     }
     
     //    private func shareImage() {
