@@ -20,6 +20,9 @@ struct PhotoDetailView: View {
     @State private var alertMessage = ""
     @State private var showDeleteConfirmation = false
     
+    @State private var currentScale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    
     var body: some View {
         VStack(spacing: 0) {
             // Top Info Bar
@@ -46,17 +49,27 @@ struct PhotoDetailView: View {
             }
             
             // Main Image
+            //            TabView(selection: $selectedIndex) {
+            //                ForEach(photos.indices, id: \.self) { index in
+            //                    Image(uiImage: photos[index])
+            //                        .resizable()
+            //                        .scaledToFit()
+            //                        .tag(index)
+            //                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            //                }
+            //            }
+            //            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             TabView(selection: $selectedIndex) {
                 ForEach(photos.indices, id: \.self) { index in
-                    Image(uiImage: photos[index])
-                        .resizable()
-                        .scaledToFit()
+                    ZoomView(image: photos[index])
                         .tag(index)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-            }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            
+            }.tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .onChange(of: selectedIndex) { oldValue, newValue in
+                    // Reset zoom when changing images
+                    currentScale = 1.0
+                    lastScale = 1.0
+                }
             // Thumbnails Strip
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -141,7 +154,7 @@ struct PhotoDetailView: View {
         formatter.locale = Locale(identifier: "en_us")
         let calendar = Calendar.current
         let now = Date()
-
+        
         if calendar.isDateInToday(date) {
             return "Today"
         } else if calendar.isDateInYesterday(date) {
