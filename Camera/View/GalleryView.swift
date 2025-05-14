@@ -203,6 +203,7 @@ struct GalleryView: View {
             }
         }
         .onAppear {
+            photosBySession = []
             photos = []
             loadImagesFromTakenPhotos()
             if !isWelcomeShow {
@@ -234,6 +235,7 @@ struct GalleryView: View {
         
         selectedPhotoIDs.removeAll()
         isMultiSelectMode = false
+        photosBySession = []
         photos = []
         loadImagesFromTakenPhotos()
     }
