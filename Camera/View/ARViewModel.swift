@@ -103,10 +103,31 @@ class ARViewModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
             DispatchQueue.main.async { self.photoCaptureCompletion?(nil) }
             return
         }
-//        image = image.withHorizontallyFlippedOrientation()
+        
+        let fixedOrientationImage = image.fixedOrientation()
+        let fixedImage = fixedOrientationImage.withHorizontallyFlippedOrientation()
 
-        DispatchQueue.main.async { self.photoCaptureCompletion?(image) }
+        DispatchQueue.main.async { self.photoCaptureCompletion?(fixedImage) }
     }
+    private func flipImageHorizontally(image: UIImage) -> UIImage? {
+          UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+          guard let context = UIGraphicsGetCurrentContext(),
+                let cgImage = image.cgImage else {
+              return nil
+          }
+
+          // Flip horizontally: move origin to the right edge and flip the x-axis
+          context.translateBy(x: image.size.width, y: 0)
+          context.scaleBy(x: -1.0, y: 1.0)
+
+          // Draw the original image into the context
+          context.draw(cgImage, in: CGRect(origin: .zero, size: image.size))
+
+          let flippedImage = UIGraphicsGetImageFromCurrentImageContext()
+          UIGraphicsEndImageContext()
+
+          return flippedImage
+      }
 
     // MARK: - ARKit Session Restart
     func restartSession() {
@@ -120,5 +141,17 @@ class ARViewModel: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
     func pauseSession(){
         arView?.session.pause()
         captureSession?.stopRunning()
+    }
+}
+extension UIImage {
+    func fixedOrientation() -> UIImage {
+        guard imageOrientation != .up else { return self }
+
+        UIGraphicsBeginImageContextWithOptions(size, false, scale)
+        draw(in: CGRect(origin: .zero, size: size))
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+
+        return normalizedImage
     }
 }

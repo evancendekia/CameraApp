@@ -42,6 +42,11 @@ struct CameraView: View {
     @State private var isExpressionDetectionEnabled: Bool = false
     @State private var photoCounter: Int = 0
     
+    
+    @State private var animatingThumbnail: UIImage? = nil
+    @State private var thumbnailScale: CGFloat = 1.0
+    @State private var thumbnailOffset: CGSize = .zero
+    
     @Environment(\.modelContext) var context
     
     //MARK: TIP ONBOARDING
@@ -71,15 +76,43 @@ struct CameraView: View {
                 // Camera Preview
                 //                CameraPreview(session: cameraService.session)
                 //                    .ignoresSafeArea()
-                Color.black.opacity(1).ignoresSafeArea()
+//                Color.black.opacity(1).ignoresSafeArea()
+                
+                Color.white
+                    .opacity(showFlash ? 1 : 0)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .animation(.easeOut(duration: 0.25), value: showFlash)
+                
                 GeometryReader { geometry in
-                    ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel,isExpressionDetectionEnabled: $isExpressionDetectionEnabled)
-                        .aspectRatio(3/4, contentMode: .fit)
-                    //                        .aspectRatio(3/4, contentMode: .fill)
-                        .clipped()
-                        .ignoresSafeArea()
-                        .padding(.bottom, 230)
-                        .position(x: geometry.size.width / 2, y: geometry.size.height * 5/8)
+                    
+                    let arWidth = geometry.size.width
+                    let arHeight = arWidth * 4 / 3 // Because aspectRatio is 3:4 (width:height)
+                    let arFrame = CGSize(width: arWidth, height: arHeight)
+
+                    ZStack{
+                        
+                        ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel,isExpressionDetectionEnabled: $isExpressionDetectionEnabled)
+                            .aspectRatio(3/4, contentMode: .fit)
+                        //                        .aspectRatio(3/4, contentMode: .fill)
+                            .clipped()
+                            .ignoresSafeArea()
+                            .padding(.bottom, 230)
+                            .position(x: geometry.size.width / 2, y: geometry.size.height * 5/8)
+                        // --- Animating thumbnail overlay ---
+                        if let animatingThumbnail = animatingThumbnail {
+                            Image(uiImage: animatingThumbnail)
+                                .resizable()
+                                .aspectRatio(3/4, contentMode: .fill)
+                                .frame(width: arFrame.width, height: arFrame.height)
+                                .clipped()
+                                .border(Color.white, width: 4)
+                                .scaleEffect(thumbnailScale)
+                                .offset(thumbnailOffset)
+                                .zIndex(2)
+                                .animation(.easeInOut(duration: 0.5), value: thumbnailScale)
+                        }
+                    }
                 }
                 .ignoresSafeArea()
                 
@@ -166,11 +199,23 @@ struct CameraView: View {
                             }
                             .popoverTip(isSmileTipVisible ? ResultPhotoTip() : nil)
                         }else{
-                            Rectangle()
-                                .fill(Color.black)
-                                .frame(width: 60, height: 60)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .padding(.leading)
+                            VStack(){
+                                Text("\(photoCounter)")
+                                    .foregroundStyle(.white)
+                                    .font(.system(size: 30, weight: .bold, design: .default))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .frame(width: 60, height: 60)
+                                    .padding(.horizontal, 10)
+    //                                .alignment(.center)
+//                                    .background(
+//                                        Rectangle()
+//                                            .fill(Color.gray)
+//                                            .frame(width: 60, height: 60)
+//                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+//                                            .padding(.leading)
+//                                    )
+                            }
+                            
                         }
                         
                         Spacer()
@@ -278,22 +323,46 @@ struct CameraView: View {
                     //capture
                     lastCaptureTime = now
                     arViewModel.captureSnapshot { image in
-//                    arViewModel.captureHighResolutionPhoto{ image in
-                      
+                        if let img = image {
+//                            thumbnailScale = 1.0
+//                            thumbnailOffset = .zero
+                            animatingThumbnail = img
+                            lastPhoto = img // Set early preview image
+                            // But do not animate yet — wait for high-res to finish
+                        }
+                    }
+                    
+                    arViewModel.captureHighResolutionPhoto{ image in
+                        
+                        
                         showFlash = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             showFlash = false
                         }
                         if let img = image {
-//                            let croppedImage = cropToAspectRatio(image: img, aspectRatio: CGSize(width: 3, height: 4))
+
                             lastPhoto = img
                             savePhotoToAppStorage(img)
                             photoCounter += 1
-                            
-                            
                             showCapturedMessage = true
+                            withAnimation(.easeInOut(duration: 0.5)) {
+                                thumbnailScale = 0.2
+                                thumbnailOffset = CGSize(width: -150, height: 300)
+                            }
+
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                animatingThumbnail = nil
+                                thumbnailScale = 1.0
+                                thumbnailOffset = .zero
+                            }
                         } else {
                             print("No image captured")
+                            // Still remove the animating thumbnail if high-res failed
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                animatingThumbnail = nil
+                                thumbnailScale = 1.0
+                                thumbnailOffset = .zero
+                            }
                         }
                     }
                     
