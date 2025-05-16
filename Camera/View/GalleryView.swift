@@ -17,7 +17,6 @@ struct allSessionPhotos: Identifiable {
 }
 
 struct GalleryView: View {
-    
     @Environment(\.modelContext) var context
     @State var photos: [UIImage]
     @Binding var photoAssets: [PHAsset]
@@ -34,7 +33,11 @@ struct GalleryView: View {
     @State private var isMultiSelectMode: Bool = false
     @State private var showMultiSelectDeleteConfirmation = false
     @State var photoItems: [PhotoItem] = []
-    
+
+    // MARK: state for multi-select with slide gesture
+    @State private var dragLocation: CGPoint? = nil
+    @State private var alreadySelectedDuringDrag: Set<UUID> = []
+
     @State var photosBySession: [allSessionPhotos] = []
     @Query(sort: [SortDescriptor(\Session.createdDate, order: .forward)]) var sessions: [Session]
     @Query(sort: [SortDescriptor(\TakenPhoto.timestamp, order: .reverse)]) var takenPhotos: [TakenPhoto]
@@ -51,11 +54,11 @@ struct GalleryView: View {
         let triggerInterval: TimeInterval = 24 * 60 * 60 // 24 hours in seconds
         let elapsed = now.timeIntervalSince(date)
         
-
+        
         if elapsed <= triggerInterval {
             let remaining = triggerInterval - elapsed
             let hours = Int(remaining) / 3600
-//            let minutes = (Int(remaining) % 3600) / 60
+            //            let minutes = (Int(remaining) % 3600) / 60
             
             print("elapsed",elapsed)
             print(date)
@@ -81,53 +84,74 @@ struct GalleryView: View {
                             .padding(.bottom, -15)
                         
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                            
                             ForEach(Array(item.sessionPhotos.enumerated()), id: \.offset) { index, photo in
-                                Image(uiImage: photo)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 100, height: 100)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .onTapGesture {
-                                        if isMultiSelectMode {
-                                            if let matchingItem = photoItems.first(where: { $0.image == photo }) {
-                                                let id = matchingItem.id
-                                                if selectedPhotoIDs.contains(id) {
-                                                    selectedPhotoIDs.remove(id)
+                                GeometryReader { geo in
+                                    let frame = geo.frame(in: .named("photoGrid"))
+                                    
+                                    Image(uiImage: photo)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 100, height: 100)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .onTapGesture {
+                                            if isMultiSelectMode {
+                                                    toggleSelectionOnTap(photo: photo)
                                                 } else {
-                                                    selectedPhotoIDs.insert(id)
+                                                    selectedPhoto = photo
+                                                    if let index = photos.firstIndex(of: photo) {
+                                                        selectedIndex = index
+                                                    }
+                                                    isFullScreen = true
+                                                }
+                                        }
+                                        .overlay(
+                                            Group {
+                                                if isMultiSelectMode, let matchingItem = photoItems.first(where: { $0.image == photo }),
+                                                   selectedPhotoIDs.contains(matchingItem.id) {
+                                                    Color.black.opacity(0.4)
+                                                        .overlay(
+                                                            Image(systemName: "checkmark.circle.fill")
+                                                                .resizable()
+                                                                .frame(width: 16, height: 16)
+                                                                .symbolRenderingMode(.palette)
+                                                                .foregroundStyle(.white, .blue) // checkmark: white, circle: clear
+                                                                .background(
+                                                                        Circle()
+                                                                            .stroke(Color.white, lineWidth: 3) // White border
+                                                                    )
+                                                                .padding(6),
+                                                            alignment: .bottomTrailing
+                                                        )
+                                                } else {
+                                                    Color.clear
                                                 }
                                             }
-                                        } else {
-                                            selectedPhoto = photo
-                                            if let index = photos.firstIndex(of: photo) {
-                                                selectedIndex = index
-                                            }
-                                            isFullScreen = true
-                                        }
-                                        print("🥶 isMultiSelectMode: \(isMultiSelectMode)")
-                                        print("🥶 selectedPhotoIDs: \(selectedPhotoIDs)")
-                                        
-                                    }
-                                    .overlay(
-                                        Group {
-                                            if isMultiSelectMode, let matchingItem = photoItems.first(where: { $0.image == photo }),
-                                               selectedPhotoIDs.contains(matchingItem.id)
- {
-                                                Color.black.opacity(0.4)
-                                                    .overlay(Image(systemName: "checkmark.circle.fill")
-                                                        .resizable()
-                                                        .foregroundColor(.white)
-                                                        .frame(width: 24, height: 24)
-                                                        .padding(6),
-                                                             alignment: .topTrailing
-                                                    )
-                                                    .allowsHitTesting(false)
+                                        )
+                                        .onChange(of: dragLocation) { newPoint in
+                                            if let newPoint = newPoint,
+                                               frame.contains(newPoint),
+                                               isMultiSelectMode {
+                                                if let matchingItem = photoItems.first(where: { $0.image == photo }) {
+                                                    toggleSelectionDuringDrag(id: matchingItem.id)
+                                                }
                                             }
                                         }
-                                    )
+                                }
+                                .frame(width: 100, height: 100)
+                                
                             }
                         }
+                        .coordinateSpace(name: "photoGrid")
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    self.dragLocation = value.location
+                                }
+                                .onEnded { _ in
+                                    self.dragLocation = nil
+                                    self.alreadySelectedDuringDrag.removeAll()
+                                }
+                        )
                         .padding()
                     }
                     
@@ -287,8 +311,6 @@ struct GalleryView: View {
         
     }
     
-    
-    // MARK: - Helper untuk menyimpan ke album Snaptify
     private func saveImageToSnaptifyAlbum(image: UIImage, completion: @escaping () -> Void) {
         func getOrCreateAlbum(named name: String, completion: @escaping (PHAssetCollection?) -> Void) {
             // Cari album yang sudah ada
@@ -370,9 +392,9 @@ struct GalleryView: View {
             if photosOfSession.isEmpty {
                 continue
             }
-                
+            
             for photo in photosOfSession {
-    //            print("ID: \(photo.id), timeStamp: \(photo.timestamp), filename: \(photo.filename), sessionID: \(photo.session)")
+                //            print("ID: \(photo.id), timeStamp: \(photo.timestamp), filename: \(photo.filename), sessionID: \(photo.session)")
                 let fileURL = documentsURL.appendingPathComponent(photo.filename)
                 
                 if fileManager.fileExists(atPath: fileURL.path) {
@@ -412,8 +434,32 @@ struct GalleryView: View {
                 at: 0
             )
             print("PhotosBySession",photosBySession)
-            
-            
         }
     }
+    
+    private func toggleSelectionDuringDrag(id: UUID) {
+        if !alreadySelectedDuringDrag.contains(id) {
+            if selectedPhotoIDs.contains(id) {
+                selectedPhotoIDs.remove(id)
+            } else {
+                selectedPhotoIDs.insert(id)
+            }
+            alreadySelectedDuringDrag.insert(id)
+        }
+    }
+    
+    private func toggleSelectionOnTap(photo: UIImage) {
+        guard let matchingItem = photoItems.first(where: { $0.image == photo }) else { return }
+
+        if selectedPhotoIDs.contains(matchingItem.id) {
+            selectedPhotoIDs.remove(matchingItem.id)
+        } else {
+            selectedPhotoIDs.insert(matchingItem.id)
+        }
+
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
+
+
 }
