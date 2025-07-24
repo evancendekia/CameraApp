@@ -1,19 +1,154 @@
 import SwiftUI
 import Photos
-import TipKit
 import SwiftData
 
 
+struct TutorialStep {
+    let id: Int
+    let stepText: String
+    let text: String
+    let focusFrame: CGRect
+    let padding: CGFloat = 16
+    let showAbove : Bool
+}
+
+
+struct SpotlightView: View {
+    let step: TutorialStep
+    
+    var body: some View {
+        GeometryReader { geometry in
+            Color.black.opacity(0.8)
+                .mask(
+                    Rectangle()
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .frame(width: step.focusFrame.width + step.padding, height: step.focusFrame.height + step.padding)
+                                .position(x: step.focusFrame.midX, y: step.focusFrame.midY)
+                                .blendMode(.destinationOut)
+                        )
+                )
+                .compositingGroup()
+                .edgesIgnoringSafeArea(.all)
+        }
+    }
+}
+
+
+struct TutorialOverlay: View {
+    @Binding var stepIndex: Int
+    let steps: [TutorialStep]
+    
+    var body: some View {
+        ZStack {
+            if stepIndex < steps.count {
+                let step = steps[stepIndex]
+                SpotlightView(step: step)
+                
+//                GeometryReader { geometry in
+//                    VStack {
+//                        
+//                    }
+//                    .position(
+//                        x: geometry.size.width / 2,
+//                        y: step.showAbove ? max(step.focusFrame.minY - 270, 60) : min(step.focusFrame.maxY - 30, geometry.size.height)
+//                    )
+//                }
+//                .animation(.easeInOut, value: stepIndex)
+                
+                
+                GeometryReader { geometry in
+                    VStack {
+                        if step.showAbove {
+                            Text(step.stepText)
+                                .foregroundStyle(.white)
+                            
+                            Text(step.text)
+                                .foregroundStyle(.black)
+                                .padding()
+                                .background(Color.white)
+                                .cornerRadius(10)
+                                .shadow(radius: 5)
+                        } else {
+                            Text(step.text)
+                                .foregroundStyle(.black)
+                                .padding()
+                                .background(Color.white)
+                                .cornerRadius(10)
+                                .shadow(radius: 5)
+                            
+                            Text(step.stepText)
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .position(
+                        x: geometry.size.width / 2,
+                        y:  step.showAbove ? max(step.focusFrame.minY - 60, 60) : min(step.focusFrame.maxY + 50, geometry.size.height)
+                    )
+                }
+                .animation(.easeInOut, value: stepIndex)
+                .edgesIgnoringSafeArea(.all)
+                
+                
+            }
+        }
+        .onTapGesture {
+            if stepIndex == 0 {
+                stepIndex += 1
+            }
+        }
+    }
+}
+
+
+struct GeometryGetter: View {
+    var index: Int
+    @Binding var frames: [CGRect]
+    @Binding var isReady: Bool
+    
+    var body: some View {
+        GeometryReader { geometry in
+            Color.clear
+                .onAppear {
+                    updateFrame(geometry: geometry)
+                }
+                .onChange(of: geometry.frame(in: .global)) { _ in
+                    updateFrame(geometry: geometry)
+                }
+        }
+    }
+    
+    private func updateFrame(geometry: GeometryProxy) {
+        let frame = geometry.frame(in: .global)
+        
+        guard frame.width > 0 && frame.height > 0 else { return }
+        
+        DispatchQueue.main.async {
+            while frames.count <= index {
+                frames.append(.zero)
+            }
+            
+            frames[index] = frame
+            
+            let validFrames = frames.filter { $0 != .zero }
+            if validFrames.count >= 2 {
+                isReady = true
+            }
+        }
+    }
+}
+
+
+
+
+
 struct CameraView: View {
-    
-    
     @Query(sort: [SortDescriptor(\Session.createdDate, order: .reverse)]) var sessions: [Session]
     @Query(sort: [SortDescriptor(\TakenPhoto.timestamp, order: .reverse)]) var takenPhotos: [TakenPhoto]
-
+    
     var latestPhoto: TakenPhoto? {
         takenPhotos.first
     }
-    
     @State private var currentSessionId: String = UUID().uuidString
     @StateObject var cameraService = CameraService()
     @State private var lastPhoto: UIImage?
@@ -49,17 +184,15 @@ struct CameraView: View {
     
     @Environment(\.modelContext) var context
     
-    //MARK: TIP ONBOARDING
-    @State var homeScreenTip = TipGroup(.ordered){
-        TimerTip()
-        ButtonTip()
-        StopButtonTip()
-        ResultPhotoTip()
-    }
-    
-//    @State private var firstTry: Bool = true
+    //MARK: NEW TOOLTIP
+    @State private var elementFrames: [CGRect] = []
+    @State private var showTutorial = true
+    @State private var stepIndexTutorial = 0
+    @State private var frameIsReady = false
+    @State private var showTutorialOverlayButtonStop: Bool = true
     
     @AppStorage("firstTry") private var firstTry: Bool = false
+//    @State private var firstTry: Bool = false
     @State var isStopButtonTapped: Bool = false
     @State private var isSmileTipVisible: Bool = false
     @State private var disableButton = true
@@ -67,6 +200,8 @@ struct CameraView: View {
     @State private var isAnimateButtonStart: Bool = false
     @State private var tipAfterButtonStopRecord: Bool = false
     @State private var showCapturedMessage = false
+    
+    @State var isTutorialOverlayButtonStop: Bool = false
     
     //    @AppStorage("isAnimateButtonStart") var isAnimateButtonStart: Bool = false
     
@@ -76,7 +211,7 @@ struct CameraView: View {
                 // Camera Preview
                 //                CameraPreview(session: cameraService.session)
                 //                    .ignoresSafeArea()
-//                Color.black.opacity(1).ignoresSafeArea()
+                //                Color.black.opacity(1).ignoresSafeArea()
                 
                 Color.white
                     .opacity(showFlash ? 1 : 0)
@@ -89,7 +224,7 @@ struct CameraView: View {
                     let arWidth = geometry.size.width
                     let arHeight = arWidth * 4 / 3 // Because aspectRatio is 3:4 (width:height)
                     let arFrame = CGSize(width: arWidth, height: arHeight)
-
+                    
                     ZStack{
                         
                         ARViewContainer(faces: $faces, faceID : $faceID, viewModel: arViewModel,isExpressionDetectionEnabled: $isExpressionDetectionEnabled)
@@ -119,10 +254,14 @@ struct CameraView: View {
                 GeometryReader { geometry in
                     Text(timeString(from: timeRemaining))
                         .font(.system(size: 32))
-                        .background(isExpressionDetectionEnabled ? Color(.red) : .clear)
-                        .cornerRadius(10)
-                        .popoverTip(homeScreenTip.currentTip as? TimerTip)
+                        .padding(5)
+                        .overlay(
+                            GeometryGetter(index: 0, frames: $elementFrames, isReady: $frameIsReady)
+                                .allowsHitTesting(false)
+                        )
+                        .background(isExpressionDetectionEnabled ? Color(.red) : .clear, in: RoundedRectangle(cornerRadius: 5))
                         .foregroundStyle(.white)
+                        
                         .frame(maxWidth: .infinity, alignment: .center)
                         .position(x: geometry.size.width / 2, y: geometry.size.height * 0.15)
                 }
@@ -135,8 +274,8 @@ struct CameraView: View {
                     .animation(.easeOut(duration: 0.2), value: showFlash)
                 VStack {
                     Spacer()
-//                                        Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
-//                                        Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
+                    //                                        Text("Faces: \(numberOfFaces)").foregroundStyle(Color.white).font(.title)
+                    //                                        Text("Smiling: \(numberOfSmiling)").foregroundStyle(Color.white).font(.title)
                     //                    List(faces) { face in
                     //                        Text("Face ID: \(face.id) - Expression: \(face.expression)")
                     //                    }
@@ -159,12 +298,12 @@ struct CameraView: View {
                                     }
                                     
                                 }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                        withAnimation {
-                                            hasHiddenSmileMessage = false
-                                        }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                    withAnimation {
+                                        hasHiddenSmileMessage = false
                                     }
-
+                                }
+                                
                             }
                             
                         }
@@ -181,6 +320,11 @@ struct CameraView: View {
                         if isExpressionDetectionEnabled == false {
                             Button {
                                 showingGallery = true
+                                stepIndexTutorial += 1
+                                
+                                if !firstTry {
+                                    firstTry = true
+                                }
                             } label: {
                                 if let image = lastPhoto {
                                     Image(uiImage: image)
@@ -197,7 +341,7 @@ struct CameraView: View {
                                         .padding(.leading)
                                 }
                             }
-                            .popoverTip(isSmileTipVisible ? ResultPhotoTip() : nil)
+                            .overlay(GeometryGetter(index: 3, frames: $elementFrames, isReady: $frameIsReady)) // result foto
                         }else{
                             VStack(){
                                 Text("\(photoCounter)")
@@ -206,37 +350,42 @@ struct CameraView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                                     .frame(width: 60, height: 60)
                                     .padding(.horizontal, 10)
-    //                                .alignment(.center)
-//                                    .background(
-//                                        Rectangle()
-//                                            .fill(Color.gray)
-//                                            .frame(width: 60, height: 60)
-//                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-//                                            .padding(.leading)
-//                                    )
+                                //                                .alignment(.center)
+                                //                                    .background(
+                                //                                        Rectangle()
+                                //                                            .fill(Color.gray)
+                                //                                            .frame(width: 60, height: 60)
+                                //                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                //                                            .padding(.leading)
+                                //                                    )
                             }
                             
                         }
                         
                         Spacer()
                         ZStack{
-//                            RoundedRectangle(cornerRadius: 100)
-//                                .fill(isAnimateButtonStart ? Color.white: .clear)
-//                                .frame(width: 85, height: 85)
-//                                .blur(radius: isAnimateButtonStart ? 20 : 0)
-//                                .onAppear {
-//                                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)){
-//                                        isAnimateButtonStart = true
-//                                    }
-//                                }
+                            //                            RoundedRectangle(cornerRadius: 100)
+                            //                                .fill(isAnimateButtonStart ? Color.white: .clear)
+                            //                                .frame(width: 85, height: 85)
+                            //                                .blur(radius: isAnimateButtonStart ? 20 : 0)
+                            //                                .onAppear {
+                            //                                    withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)){
+                            //                                        isAnimateButtonStart = true
+                            //                                    }
+                            //                                }
                             Button(action: {
                                 actionButton()
+                                stepIndexTutorial += 1
+                                print("firstry : \(firstTry)")
                             }) {
                                 ZStack {
                                     Circle()
                                         .stroke(Color.white, lineWidth: 4)
                                         .frame(width: 70, height: 70)
-                                    
+                                        .overlay( isTutorialOverlayButtonStop ?
+                                                  GeometryGetter(index: 2, frames: $elementFrames, isReady: $frameIsReady) : nil
+                                        )
+                                        
                                     
                                     if isExpressionDetectionEnabled {
                                         RoundedRectangle(cornerRadius: 8)
@@ -249,17 +398,32 @@ struct CameraView: View {
                                     }
                                     
                                 }
-                                .popoverTip(tipAfterButtonStopRecord ? StopButtonTip() : nil)
-                                //
-                                .popoverTip(homeScreenTip.currentTip as? ButtonTip)
+                                
                             }
-                            
+                            .overlay{GeometryGetter(index: 1, frames: $elementFrames, isReady: $frameIsReady)}
                         }
                         
                         Spacer()
                         Spacer()
                     }
                     .padding(.bottom, 50)
+                }
+                
+                ZStack{
+                    if showTutorial && frameIsReady && elementFrames.count == 4 && !firstTry{
+                        let tutorialSteps = createTutorialSteps()
+                        
+                        TutorialOverlay(
+                                    stepIndex: $stepIndexTutorial,
+                                    steps: tutorialSteps
+                                )
+                        .allowsHitTesting(stepIndexTutorial == 1 || stepIndexTutorial == 2 || stepIndexTutorial == 3 ? false : true)
+                        .onChange(of: stepIndexTutorial) { newValue in
+                            if newValue >= 4 {
+                                showTutorial = false
+                            }
+                        }
+                    }
                 }
             }
             .alert(isPresented: $showAlert) {
@@ -272,16 +436,6 @@ struct CameraView: View {
                     })
                 )
             }
-            .task {
-                do {
-//                    try Tips.resetDatastore()
-                    try Tips.configure([
-                        .datastoreLocation(.applicationDefault),
-                    ])
-                } catch {
-                    print("Error initializing TipKit \(error.localizedDescription)")
-                }
-            }
             
             .navigationDestination(isPresented: $showingGallery) {
                 GalleryView(
@@ -292,11 +446,16 @@ struct CameraView: View {
                 )
             }
             .onAppear {
-//                print("sessions",sessions)
-//                for session in sessions {
-//                    print("ID: \(session.id), Start: \(session.createdDate), End: \(session.finishedDate ?? Date())")
-//                }
+                //                print("sessions",sessions)
+                //                for session in sessions {
+                //                    print("ID: \(session.id), Start: \(session.createdDate), End: \(session.finishedDate ?? Date())")
+                //                }
+                
+                print("firts try: \(firstTry)")
+//                UserDefaults.standard.removeObject(forKey: "firstTry")
+                
                 loadLatestTakenPhotos()
+                
                 arViewModel.restartSession()
                 Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
                     let now = Date()
@@ -318,14 +477,14 @@ struct CameraView: View {
                 
                 let now = Date()
                 //                if numberOfFaces > 1 && numberOfSmiling == 2 && now.timeIntervalSince(lastCaptureTime) > 1 {
-                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 3 {
+                if numberOfFaces > 0 && numberOfSmiling > 0 && now.timeIntervalSince(lastCaptureTime) > 10 {
                     
                     //capture
                     lastCaptureTime = now
                     arViewModel.captureSnapshot { image in
                         if let img = image {
-//                            thumbnailScale = 1.0
-//                            thumbnailOffset = .zero
+                            //                            thumbnailScale = 1.0
+                            //                            thumbnailOffset = .zero
                             animatingThumbnail = img
                             lastPhoto = img // Set early preview image
                             // But do not animate yet — wait for high-res to finish
@@ -340,7 +499,7 @@ struct CameraView: View {
                             showFlash = false
                         }
                         if let img = image {
-
+                            
                             lastPhoto = img
                             savePhotoToAppStorage(img)
                             photoCounter += 1
@@ -349,7 +508,7 @@ struct CameraView: View {
                                 thumbnailScale = 0.2
                                 thumbnailOffset = CGSize(width: -150, height: 300)
                             }
-
+                            
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                                 animatingThumbnail = nil
                                 thumbnailScale = 1.0
@@ -366,12 +525,12 @@ struct CameraView: View {
                         }
                     }
                     
-                    
+                    isTutorialOverlayButtonStop = true
                     
                     //selesai capture pertama kali
                     // stop
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        tipAfterButtonStopRecord = true
+                        showTutorialOverlayButtonStop = false
                     }
                     
                 }
@@ -383,15 +542,13 @@ struct CameraView: View {
             isAnimateButtonStart = false
         }
         
-//        if !isExpressionDetectionEnabled {
-//            isSmileTipVisible = true
-//        }
+        //        if !isExpressionDetectionEnabled {
+        //            isSmileTipVisible = true
+        //        }
         
         isExpressionDetectionEnabled = !isExpressionDetectionEnabled
         
-        if isExpressionDetectionEnabled == false && !firstTry {
-            firstTry = true
-        }
+        
         
         if isExpressionDetectionEnabled {
             //save session
@@ -420,21 +577,41 @@ struct CameraView: View {
             )
             if let sessionToUpdate = try? context.fetch(descriptor).first {
                 sessionToUpdate.finishedDate = Date()
-               try? context.save()
-//               print("Session with id \(currentSessionId) updated.")
-           } else {
-//               print("Session with id \(currentSessionId) not found.")
-           }
+                try? context.save()
+                //               print("Session with id \(currentSessionId) updated.")
+            } else {
+                //               print("Session with id \(currentSessionId) not found.")
+            }
             
-//            for session in sessions {
-//                print("ID: \(session.id), Start: \(session.createdDate), End: \(session.finishedDate ?? Date())")
-//            }
+            //            for session in sessions {
+            //                print("ID: \(session.id), Start: \(session.createdDate), End: \(session.finishedDate ?? Date())")
+            //            }
             
             UIApplication.shared.isIdleTimerDisabled = false
             stopTimer()
             showAlert = true
         }
     }
+    
+    private func createTutorialSteps() -> [TutorialStep] {
+        var steps: [TutorialStep] = [
+            TutorialStep(id: 0, stepText: "Tap anywhere to continue", text: "Auto Capture is only available for 1 hour!", focusFrame: elementFrames[0], showAbove: false),
+            TutorialStep(id: 1, stepText: "Tap the start button to continue", text: "Tap to start automatic photo capture hands free and hassle-free.", focusFrame: elementFrames[1], showAbove: true)
+        ]
+        
+        // Hanya tambahkan step ini jika showCapturedMessage = true
+        if isTutorialOverlayButtonStop && elementFrames.count > 2 {
+            steps.append(TutorialStep(id: 2, stepText: "Tap the stop button to continue", text: "Click here to stop automatic photo capture.", focusFrame: elementFrames[2], showAbove: true))
+        }
+        
+        // Step untuk gallery
+        if elementFrames.count > 3 && isTutorialOverlayButtonStop{
+            steps.append(TutorialStep(id: 3, stepText: "Tap the gallery button to continue", text: "Click here to see your result Photos.", focusFrame: elementFrames[3], showAbove: true))
+        }
+        
+        return steps
+    }
+    
     private func loadLatestTakenPhotos() {
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -448,7 +625,7 @@ struct CameraView: View {
                     let data = try Data(contentsOf: fileURL)
                     if let image = UIImage(data: data) {
                         
-//                        print("lastPhoto",lastPhoto)
+                        //                        print("lastPhoto",lastPhoto)
                         DispatchQueue.main.async {
                             self.lastPhoto = image
                         }
@@ -520,6 +697,8 @@ struct CameraView: View {
         timeRemaining = 3600
     }
 }
+
+
 
 struct CameraView_Previews: PreviewProvider {
     static var previews: some View {

@@ -27,15 +27,17 @@ struct CameraApp: App {
         WindowGroup {
             NavigationStack {
                 if hasSeenOnboarding {
-                    CameraView()
+                    ShowCamera()
                         .preferredColorScheme(.dark)
                 } else {
                     OnBoarding()
                         .preferredColorScheme(.dark)
                 }
-                
             }
         }
         .modelContainer(modelContainer)
     }
 }
+
+
+

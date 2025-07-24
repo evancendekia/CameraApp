@@ -37,10 +37,10 @@ class CameraService: NSObject, ObservableObject {
         photoOutput.capturePhoto(with: settings, delegate: self)
     }
 
-    func switchCamera() {
-        currentCameraPosition = currentCameraPosition == .back ? .front : .back
-        configure()
-    }
+//    func switchCamera() {
+//        currentCameraPosition = currentCameraPosition == .back ? .front : .back
+//        configure()
+//    }
     
     private func setupSession() {
         session.beginConfiguration()
