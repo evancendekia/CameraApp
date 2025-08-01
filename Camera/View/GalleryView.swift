@@ -144,20 +144,22 @@ struct GalleryView: View {
                             }
                         }
                         .coordinateSpace(name: "photoGrid")
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { value in
-                                    if activeSessionDrag == nil {
-                                        activeSessionDrag = item.session
+                        .if(isMultiSelectMode) {
+                            $0.gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        if activeSessionDrag == nil {
+                                            activeSessionDrag = item.session
+                                        }
+                                        self.dragLocation = value.location
                                     }
-                                    self.dragLocation = value.location
-                                }
-                                .onEnded { _ in
-                                    self.dragLocation = nil
-                                    self.alreadySelectedDuringDrag.removeAll()
-                                    self.activeSessionDrag = nil
-                                }
-                        )
+                                    .onEnded { _ in
+                                        self.dragLocation = nil
+                                        self.alreadySelectedDuringDrag.removeAll()
+                                        self.activeSessionDrag = nil
+                                    }
+                            )
+                        }
                         .padding()
                     }
                     
@@ -488,4 +490,14 @@ struct GalleryView: View {
     }
 
 
+}
+
+extension View {
+    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
 }
