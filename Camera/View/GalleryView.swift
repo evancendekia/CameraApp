@@ -242,6 +242,8 @@ struct GalleryView: View {
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
         
         let itemsToDelete = photoItems.filter { selectedPhotoIDs.contains($0.id) }
+        var sessionIDToDelete: String?
+        
         for item in itemsToDelete {
             let fileURL = documentsURL.appendingPathComponent(item.filename)
             
@@ -254,7 +256,25 @@ struct GalleryView: View {
                 print("❌ Could not delete file: \(error.localizedDescription)")
             }
             
-            photoItems.removeAll { selectedPhotoIDs.contains($0.id) }
+            if let takenPhoto = takenPhotos.first(where: { $0.filename == item.filename }) {
+                sessionIDToDelete = takenPhoto.session
+                context.delete(takenPhoto)
+            }
+            
+            photoItems.removeAll { $0.id == item.id }
+        }
+        
+        if let sessionID = sessionIDToDelete {
+            let descriptor = FetchDescriptor<TakenPhoto>(
+                predicate: #Predicate { $0.session == sessionID }
+            )
+            let remainingPhotos = try! context.fetch(descriptor)
+            
+            if remainingPhotos.isEmpty {
+                if let sessionToDelete = sessions.first(where: { $0.id == sessionID }) {
+                    context.delete(sessionToDelete)
+                }
+            }
         }
         
         selectedPhotoIDs.removeAll()
