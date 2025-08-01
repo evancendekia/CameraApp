@@ -37,6 +37,7 @@ struct GalleryView: View {
     // MARK: state for multi-select with slide gesture
     @State private var dragLocation: CGPoint? = nil
     @State private var alreadySelectedDuringDrag: Set<UUID> = []
+    @State private var activeSessionDrag: String? = nil
 
     @State var photosBySession: [allSessionPhotos] = []
     @Query(sort: [SortDescriptor(\Session.createdDate, order: .forward)]) var sessions: [Session]
@@ -130,7 +131,8 @@ struct GalleryView: View {
                                         .onChange(of: dragLocation) { newPoint in
                                             if let newPoint = newPoint,
                                                frame.contains(newPoint),
-                                               isMultiSelectMode {
+                                               isMultiSelectMode,
+                                               activeSessionDrag == item.session {
                                                 if let matchingItem = photoItems.first(where: { $0.image == photo }) {
                                                     toggleSelectionDuringDrag(id: matchingItem.id)
                                                 }
@@ -145,11 +147,15 @@ struct GalleryView: View {
                         .gesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { value in
+                                    if activeSessionDrag == nil {
+                                        activeSessionDrag = item.session
+                                    }
                                     self.dragLocation = value.location
                                 }
                                 .onEnded { _ in
                                     self.dragLocation = nil
                                     self.alreadySelectedDuringDrag.removeAll()
+                                    self.activeSessionDrag = nil
                                 }
                         )
                         .padding()
