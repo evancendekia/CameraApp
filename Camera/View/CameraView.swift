@@ -112,7 +112,7 @@ struct GeometryGetter: View {
                 .onAppear {
                     updateFrame(geometry: geometry)
                 }
-                .onChange(of: geometry.frame(in: .global)) { _ in
+                .onChange(of: geometry.frame(in: .global)) { _, _ in
                     updateFrame(geometry: geometry)
                 }
         }
@@ -418,7 +418,7 @@ struct CameraView: View {
                                     steps: tutorialSteps
                                 )
                         .allowsHitTesting(stepIndexTutorial == 1 || stepIndexTutorial == 2 || stepIndexTutorial == 3 ? false : true)
-                        .onChange(of: stepIndexTutorial) { newValue in
+                        .onChange(of: stepIndexTutorial) { _, newValue in
                             if newValue >= 4 {
                                 showTutorial = false
                             }
@@ -464,14 +464,14 @@ struct CameraView: View {
                     }
                 }
             }
-            .onChange(of: showingGallery) { newValue in
+            .onChange(of: showingGallery) { _, newValue in
                 if newValue == true {
                     arViewModel.pauseSession()
                 }else{
                     arViewModel.restartSession()
                 }
             }
-            .onChange(of: faces) { newFaces in
+            .onChange(of: faces) { _, newFaces in
                 numberOfFaces = newFaces.count
                 numberOfSmiling = newFaces.filter { $0.expression.lowercased().contains("smiling") }.count
                 
