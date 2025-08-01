@@ -145,13 +145,17 @@ struct GalleryView: View {
                         }
                         .coordinateSpace(name: "photoGrid")
                         .if(isMultiSelectMode) {
-                            $0.gesture(
+                            $0.simultaneousGesture(
                                 DragGesture(minimumDistance: 0)
                                     .onChanged { value in
-                                        if activeSessionDrag == nil {
-                                            activeSessionDrag = item.session
+                                        let horizontalDistance = abs(value.translation.width)
+                                        let verticalDistance = abs(value.translation.height)
+                                        if horizontalDistance > verticalDistance {
+                                            if activeSessionDrag == nil {
+                                                activeSessionDrag = item.session
+                                            }
+                                            self.dragLocation = value.location
                                         }
-                                        self.dragLocation = value.location
                                     }
                                     .onEnded { _ in
                                         self.dragLocation = nil
