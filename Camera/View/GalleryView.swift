@@ -17,32 +17,39 @@ struct allSessionPhotos: Identifiable {
 }
 
 struct GalleryView: View {
+    // MARK: - Properties
     @Environment(\.modelContext) var context
+    
+    // MARK: State
     @State var photos: [UIImage]
-    @Binding var photoAssets: [PHAsset]
-    @Binding var isFullScreen: Bool
-    @Binding var selectedPhoto: UIImage?
     @State private var currentPhotos: [UIImage] = []
     @State private var selectedIndex: Int = 0
     @State private var imageFileURLs: [URL] = []
     @AppStorage("IsWelcomeShow") var isWelcomeShow: Bool = false
     @State private var checkWelcome: Bool = false
     
-    // MARK: state for multi-select image
+    // MARK: Bindings
+    @Binding var photoAssets: [PHAsset]
+    @Binding var isFullScreen: Bool
+    @Binding var selectedPhoto: UIImage?
+    
+    // MARK: Multi-select State
     @State private var selectedPhotoIDs: Set<UUID> = []
     @State private var isMultiSelectMode: Bool = false
     @State private var showMultiSelectDeleteConfirmation = false
     @State var photoItems: [PhotoItem] = []
 
-    // MARK: state for multi-select with slide gesture
+    // MARK: Gesture State
     @State private var dragLocation: CGPoint? = nil
     @State private var alreadySelectedDuringDrag: Set<UUID> = []
     @State private var activeSessionDrag: String? = nil
 
+    // MARK: Data
     @State var photosBySession: [allSessionPhotos] = []
     @Query(sort: [SortDescriptor(\Session.createdDate, order: .forward)]) var sessions: [Session]
     @Query(sort: [SortDescriptor(\TakenPhoto.timestamp, order: .reverse)]) var takenPhotos: [TakenPhoto]
     
+    // MARK: - Computed Properties
     var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd MMMM yyyy"
@@ -50,27 +57,8 @@ struct GalleryView: View {
         formatter.timeZone = .current // Follows device time zone
         return formatter
     }
-    func countdownMessage(from date: Date) -> String {
-        let now = Date()
-        let triggerInterval: TimeInterval = 24 * 60 * 60 // 24 hours in seconds
-        let elapsed = now.timeIntervalSince(date)
-        
-        
-        if elapsed <= triggerInterval {
-            let remaining = triggerInterval - elapsed
-            let hours = Int(remaining) / 3600
-            //            let minutes = (Int(remaining) % 3600) / 60
-            
-            print("elapsed",elapsed)
-            print(date)
-            print("Your Photos in this session will be deleted in \(hours)h")
-            
-            return "Your Photos in this session will be deleted in \(hours)h"
-        }else{
-            return ""
-        }
-    }
     
+    // MARK: - Body
     var body: some View {
         VStack {
             ScrollView(.vertical, showsIndicators: false) {
@@ -128,7 +116,7 @@ struct GalleryView: View {
                                                 }
                                             }
                                         )
-                                        .onChange(of: dragLocation) { newPoint in
+                                        .onChange(of: dragLocation) { _, newPoint in
                                             if let newPoint = newPoint,
                                                frame.contains(newPoint),
                                                isMultiSelectMode,
@@ -246,6 +234,29 @@ struct GalleryView: View {
                 checkWelcome = true
                 isWelcomeShow = true
             }
+        }
+    }
+    
+    // MARK: - Functions
+    
+    func countdownMessage(from date: Date) -> String {
+        let now = Date()
+        let triggerInterval: TimeInterval = 24 * 60 * 60 // 24 hours in seconds
+        let elapsed = now.timeIntervalSince(date)
+        
+        
+        if elapsed <= triggerInterval {
+            let remaining = triggerInterval - elapsed
+            let hours = Int(remaining) / 3600
+            //            let minutes = (Int(remaining) % 3600) / 60
+            
+            print("elapsed",elapsed)
+            print(date)
+            print("Your Photos in this session will be deleted in \(hours)h")
+            
+            return "Your Photos in this session will be deleted in \(hours)h"
+        }else{
+            return ""
         }
     }
     

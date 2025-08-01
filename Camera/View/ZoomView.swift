@@ -78,7 +78,7 @@ struct ZoomView: View {
                             lastScale = 2.0
                         }
                     }
-                }.onChange(of: index) { _ in
+                }.onChange(of: index) { _, _ in
                     withAnimation {
                         scale = 1.0
                         lastScale = 1.0
