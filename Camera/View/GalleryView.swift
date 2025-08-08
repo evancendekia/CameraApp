@@ -38,12 +38,12 @@ struct GalleryView: View {
     @State private var isMultiSelectMode: Bool = false
     @State private var showMultiSelectDeleteConfirmation = false
     @State var photoItems: [PhotoItem] = []
-
+    
     // MARK: Gesture State
     @State private var dragLocation: CGPoint? = nil
     @State private var alreadySelectedDuringDrag: Set<UUID> = []
     @State private var activeSessionDrag: String? = nil
-
+    
     // MARK: Data
     @State var photosBySession: [allSessionPhotos] = []
     @Query(sort: [SortDescriptor(\Session.createdDate, order: .forward)]) var sessions: [Session]
@@ -62,7 +62,7 @@ struct GalleryView: View {
     var body: some View {
         VStack {
             ScrollView(.vertical, showsIndicators: false) {
-                ForEach(Array(photosBySession.enumerated()), id: \.element.id) { index, item in
+                ForEach(Array(photosBySession.enumerated()), id: \.element.id) { _, item in
                     VStack(alignment: .leading){
                         Text(dateFormatter.string(from: item.time) + " Session \(item.sessionNumber)")
                             .fontWeight(.bold)
@@ -73,7 +73,7 @@ struct GalleryView: View {
                             .padding(.bottom, -15)
                         
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                            ForEach(Array(item.sessionPhotos.enumerated()), id: \.offset) { index, photo in
+                            ForEach(Array(item.sessionPhotos.enumerated()), id: \.offset) { _, photo in
                                 GeometryReader { geo in
                                     let frame = geo.frame(in: .named("photoGrid"))
                                     
@@ -82,37 +82,35 @@ struct GalleryView: View {
                                         .scaledToFill()
                                         .frame(width: 100, height: 100)
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
-                                        .onTapGesture {
-                                            if isMultiSelectMode {
+                                        .contentShape(Rectangle()) // seluruh area foto bisa ditap
+                                        .highPriorityGesture(
+                                            TapGesture().onEnded {
+                                                if isMultiSelectMode {
                                                     toggleSelectionOnTap(photo: photo)
                                                 } else {
                                                     selectedPhoto = photo
-                                                    if let index = photos.firstIndex(of: photo) {
-                                                        selectedIndex = index
-                                                    }
+                                                    if let idx = photos.firstIndex(of: photo) { selectedIndex = idx }
                                                     isFullScreen = true
                                                 }
-                                        }
+                                            }
+                                        )
                                         .overlay(
                                             Group {
-                                                if isMultiSelectMode, let matchingItem = photoItems.first(where: { $0.image == photo }),
+                                                if isMultiSelectMode,
+                                                   let matchingItem = photoItems.first(where: { $0.image == photo }),
                                                    selectedPhotoIDs.contains(matchingItem.id) {
-                                                    Color.black.opacity(0.4)
-                                                        .overlay(
-                                                            Image(systemName: "checkmark.circle.fill")
-                                                                .resizable()
-                                                                .frame(width: 16, height: 16)
-                                                                .symbolRenderingMode(.palette)
-                                                                .foregroundStyle(.white, .blue) // checkmark: white, circle: clear
-                                                                .background(
-                                                                        Circle()
-                                                                            .stroke(Color.white, lineWidth: 3) // White border
-                                                                    )
-                                                                .padding(6),
-                                                            alignment: .bottomTrailing
-                                                        )
-                                                } else {
-                                                    Color.clear
+                                                    ZStack {
+                                                        Color.black.opacity(0.4)
+                                                        Image(systemName: "checkmark.circle.fill")
+                                                            .resizable()
+                                                            .frame(width: 16, height: 16)
+                                                            .symbolRenderingMode(.palette)
+                                                            .foregroundStyle(.white, .blue)
+                                                            .background(Circle().stroke(Color.white, lineWidth: 3))
+                                                            .padding(6)
+                                                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                                                    }
+                                                    .allowsHitTesting(false) // penting agar tap tetap kena foto
                                                 }
                                             }
                                         )
@@ -128,13 +126,12 @@ struct GalleryView: View {
                                         }
                                 }
                                 .frame(width: 100, height: 100)
-                                
                             }
                         }
                         .coordinateSpace(name: "photoGrid")
                         .if(isMultiSelectMode) {
                             $0.simultaneousGesture(
-                                DragGesture(minimumDistance: 0)
+                                DragGesture(minimumDistance: 10) // supaya tidak bentrok dengan tap
                                     .onChanged { value in
                                         let horizontalDistance = abs(value.translation.width)
                                         let verticalDistance = abs(value.translation.height)
@@ -154,17 +151,14 @@ struct GalleryView: View {
                         }
                         .padding()
                     }
-                    
-                    
                 }
             }
             
-            if isMultiSelectMode && !selectedPhotoIDs.isEmpty {
+            if isMultiSelectMode {
+                let hasSelection = !selectedPhotoIDs.isEmpty
+                
                 HStack {
-                    Button(action: {
-                        // logic for save selected photos
-                        shareImage()
-                    }) {
+                    Button(action: { shareImage() }) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.title2)
                             .foregroundColor(.blue)
@@ -172,6 +166,9 @@ struct GalleryView: View {
                             .background(Color.gray.opacity(0.2))
                             .clipShape(Circle())
                     }
+                    .disabled(!hasSelection)
+                    .opacity(hasSelection ? 1 : 0.4)
+                    .accessibilityHint("Bagikan foto yang dipilih")
                     
                     Spacer()
                     
@@ -180,10 +177,7 @@ struct GalleryView: View {
                     
                     Spacer()
                     
-                    Button(action: {
-                        // logic for delete selected photos
-                        showMultiSelectDeleteConfirmation = true
-                    }) {
+                    Button(action: { showMultiSelectDeleteConfirmation = true }) {
                         Image(systemName: "trash")
                             .font(.title2)
                             .foregroundColor(.red)
@@ -191,16 +185,26 @@ struct GalleryView: View {
                             .background(Color.gray.opacity(0.2))
                             .clipShape(Circle())
                     }
+                    .disabled(!hasSelection)
+                    .opacity(hasSelection ? 1 : 0.4)
+                    .accessibilityHint("Hapus foto yang dipilih")
                 }
                 .padding()
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.easeInOut, value: isMultiSelectMode)
+                .animation(.easeInOut, value: selectedPhotoIDs) // update enable/disable dengan halus
             }
+            
             
             Spacer()
                 .navigationDestination(isPresented: $isFullScreen) {
                     PhotoDetailView(photos: $photos,selectedIndex: $selectedIndex)
                 }
-        }.alert(isPresented: $checkWelcome) {
-            Alert(title: Text("Library Photo!"), message: Text("Your photos will be stored in this library and will disappear in 24 hours."), dismissButton: .default(Text("Done")))
+        }
+        .alert(isPresented: $checkWelcome) {
+            Alert(title: Text("Library Photo!"),
+                  message: Text("Your photos will be stored in this library and will disappear in 24 hours."),
+                  dismissButton: .default(Text("Done")))
         }
         .confirmationDialog(
             "Delete Photos",
@@ -220,9 +224,7 @@ struct GalleryView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(isMultiSelectMode ? "Done" : "Select") {
                     isMultiSelectMode.toggle()
-                    if !isMultiSelectMode {
-                        selectedPhotoIDs.removeAll()
-                    }
+                    if !isMultiSelectMode { selectedPhotoIDs.removeAll() }
                 }
             }
         }
@@ -237,25 +239,16 @@ struct GalleryView: View {
         }
     }
     
-    // MARK: - Functions
-    
     func countdownMessage(from date: Date) -> String {
         let now = Date()
-        let triggerInterval: TimeInterval = 24 * 60 * 60 // 24 hours in seconds
+        let triggerInterval: TimeInterval = 24 * 60 * 60
         let elapsed = now.timeIntervalSince(date)
-        
         
         if elapsed <= triggerInterval {
             let remaining = triggerInterval - elapsed
             let hours = Int(remaining) / 3600
-            //            let minutes = (Int(remaining) % 3600) / 60
-            
-            print("elapsed",elapsed)
-            print(date)
-            print("Your Photos in this session will be deleted in \(hours)h")
-            
             return "Your Photos in this session will be deleted in \(hours)h"
-        }else{
+        } else {
             return ""
         }
     }
@@ -269,14 +262,8 @@ struct GalleryView: View {
         
         for item in itemsToDelete {
             let fileURL = documentsURL.appendingPathComponent(item.filename)
-            
-            do {
-                if fileManager.fileExists(atPath: fileURL.path) {
-                    try fileManager.removeItem(at: fileURL)
-                    print("🗑️ Deleted file: \(item.filename)")
-                }
-            } catch {
-                print("❌ Could not delete file: \(error.localizedDescription)")
+            if fileManager.fileExists(atPath: fileURL.path) {
+                try? fileManager.removeItem(at: fileURL)
             }
             
             if let takenPhoto = takenPhotos.first(where: { $0.filename == item.filename }) {
@@ -288,11 +275,8 @@ struct GalleryView: View {
         }
         
         if let sessionID = sessionIDToDelete {
-            let descriptor = FetchDescriptor<TakenPhoto>(
-                predicate: #Predicate { $0.session == sessionID }
-            )
+            let descriptor = FetchDescriptor<TakenPhoto>(predicate: #Predicate { $0.session == sessionID })
             let remainingPhotos = try! context.fetch(descriptor)
-            
             if remainingPhotos.isEmpty {
                 if let sessionToDelete = sessions.first(where: { $0.id == sessionID }) {
                     context.delete(sessionToDelete)
@@ -308,7 +292,6 @@ struct GalleryView: View {
     }
     
     private func shareImage() {
-        // Only act if user selected multiple photos in multi-select mode
         guard isMultiSelectMode, !selectedPhotoIDs.isEmpty else { return }
         let selectedItems = photoItems.filter { selectedPhotoIDs.contains($0.id) }
         let imagesToShare = selectedItems.map { $0.image }
@@ -320,94 +303,12 @@ struct GalleryView: View {
             
             if let popover = activityVC.popoverPresentationController {
                 popover.sourceView = rootVC.view
-                popover.sourceRect = CGRect(
-                    x: rootVC.view.bounds.midX,
-                    y: rootVC.view.bounds.midY,
-                    width: 0,
-                    height: 0
-                )
+                popover.sourceRect = CGRect(x: rootVC.view.bounds.midX, y: rootVC.view.bounds.midY, width: 0, height: 0)
                 popover.permittedArrowDirections = []
-            }
-            
-            activityVC.completionWithItemsHandler = { activityType, completed, returnedItems, activityError in
-                if completed {
-                    for img in imagesToShare {
-                        saveImageToSnaptifyAlbum(image: img) {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                let alert = UIAlertController(
-                                    title: "Saved",
-                                    message: "\(imagesToShare.count) photo\(imagesToShare.count > 1 ? "s" : "") saved to Snaptify album.",
-                                    preferredStyle: .alert
-                                )
-                                alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                                rootVC.present(alert, animated: true, completion: nil)
-                            }
-                        }
-                    }
-                }
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 rootVC.present(activityVC, animated: true)
-            }
-        }
-        
-    }
-    
-    private func saveImageToSnaptifyAlbum(image: UIImage, completion: @escaping () -> Void) {
-        func getOrCreateAlbum(named name: String, completion: @escaping (PHAssetCollection?) -> Void) {
-            // Cari album yang sudah ada
-            let fetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
-            var existingAlbum: PHAssetCollection? = nil
-            fetchResult.enumerateObjects { collection, _, stop in
-                if collection.localizedTitle == name {
-                    existingAlbum = collection
-                    stop.pointee = true
-                }
-            }
-            
-            if let album = existingAlbum {
-                completion(album)
-                return
-            }
-            
-            // Kalau belum ada, buat album baru
-            var albumPlaceholder: PHObjectPlaceholder?
-            PHPhotoLibrary.shared().performChanges({
-                let createAlbumRequest = PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: name)
-                albumPlaceholder = createAlbumRequest.placeholderForCreatedAssetCollection
-            }) { success, error in
-                if success, let placeholder = albumPlaceholder {
-                    let fetchResult = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [placeholder.localIdentifier], options: nil)
-                    completion(fetchResult.firstObject)
-                } else {
-                    print("Gagal membuat album: \(error?.localizedDescription ?? "unknown error")")
-                    completion(nil)
-                }
-            }
-        }
-        
-        // Simpan ke album
-        PHPhotoLibrary.requestAuthorization { status in
-            guard status == .authorized || status == .limited else { return }
-            
-            getOrCreateAlbum(named: "Snaptify") { album in
-                guard let album = album else { return }
-                
-                PHPhotoLibrary.shared().performChanges({
-                    let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
-                    if let albumChangeRequest = PHAssetCollectionChangeRequest(for: album),
-                       let assetPlaceholder = creationRequest.placeholderForCreatedAsset {
-                        let fastEnumeration = NSArray(array: [assetPlaceholder])
-                        albumChangeRequest.addAssets(fastEnumeration)
-                    }
-                }) { success, error in
-                    if success {
-                        completion()
-                    } else {
-                        print("Error saving to album: \(error?.localizedDescription ?? "unknown")")
-                    }
-                }
             }
         }
     }
@@ -415,8 +316,6 @@ struct GalleryView: View {
     private func loadImagesFromTakenPhotos() {
         let fileManager = FileManager.default
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        print("📂 Attempting to load photos from: \(documentsURL.path)")
-        
         
         var photosForSession : [UIImage] = []
         var sessionCountByDay: [String: Int] = [:]
@@ -427,56 +326,31 @@ struct GalleryView: View {
             let sessionId = session.id
             photosForSession = []
             
-            let descriptor = FetchDescriptor<TakenPhoto>(
-                predicate: #Predicate { $0.session == sessionId }
-            )
+            let descriptor = FetchDescriptor<TakenPhoto>(predicate: #Predicate { $0.session == sessionId })
             let photosOfSession: [TakenPhoto] = try! context.fetch(descriptor)
-            
-            if photosOfSession.isEmpty {
-                continue
-            }
+            if photosOfSession.isEmpty { continue }
             
             for photo in photosOfSession {
-                //            print("ID: \(photo.id), timeStamp: \(photo.timestamp), filename: \(photo.filename), sessionID: \(photo.session)")
                 let fileURL = documentsURL.appendingPathComponent(photo.filename)
-                
                 if fileManager.fileExists(atPath: fileURL.path) {
-                    do {
-                        let data = try Data(contentsOf: fileURL)
-                        if let image = UIImage(data: data) {
-                            photosForSession.append(image)
-                            DispatchQueue.main.async {
-                                self.photoItems.insert(PhotoItem(image: image, filename: photo.filename), at: 0)
-                                self.photos.insert(image, at: 0)
-                            }
-                        } else {
-                            print("Could not decode image data for \(photo.filename)")
+                    if let data = try? Data(contentsOf: fileURL), let image = UIImage(data: data) {
+                        photosForSession.append(image)
+                        DispatchQueue.main.async {
+                            self.photoItems.insert(PhotoItem(image: image, filename: photo.filename), at: 0)
+                            self.photos.insert(image, at: 0)
                         }
-                    } catch {
-                        print("Error loading image data for \(photo.filename): \(error.localizedDescription)")
                     }
-                } else {
-                    print("😭 File not found: \(photo.filename) in Documents directory")
                 }
             }
             
-            // Determine session number based on the date
             let dateKey = dateFormatter.string(from: session.createdDate)
             sessionCountByDay[dateKey, default: 0] += 1
             let sessionNumber = sessionCountByDay[dateKey]!
             
-            print("photosForSession",photosForSession.count)
             self.photosBySession.insert(
-                allSessionPhotos(
-                    id: UUID(),
-                    session: sessionId,
-                    sessionNumber: sessionNumber,
-                    time: session.createdDate,
-                    sessionPhotos: photosForSession
-                ),
+                allSessionPhotos(id: UUID(), session: sessionId, sessionNumber: sessionNumber, time: session.createdDate, sessionPhotos: photosForSession),
                 at: 0
             )
-            print("PhotosBySession",photosBySession)
         }
     }
     
@@ -493,18 +367,13 @@ struct GalleryView: View {
     
     private func toggleSelectionOnTap(photo: UIImage) {
         guard let matchingItem = photoItems.first(where: { $0.image == photo }) else { return }
-
         if selectedPhotoIDs.contains(matchingItem.id) {
             selectedPhotoIDs.remove(matchingItem.id)
         } else {
             selectedPhotoIDs.insert(matchingItem.id)
         }
-
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
-
-
 }
 
 extension View {
