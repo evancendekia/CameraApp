@@ -415,7 +415,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Camera/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Snaptify;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
-				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to take photos.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Snaptify uses your camera to detect your smile and take photos";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "test value";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -454,7 +454,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Camera/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Snaptify;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
-				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to take photos.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Snaptify uses your camera to detect your smile and take photos";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "test value";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

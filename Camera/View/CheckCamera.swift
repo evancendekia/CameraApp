@@ -18,7 +18,7 @@ struct ShowCamera: View {
             case .denied:
                 CameraPermissionView()
             case .notDetermined:
-                Text("Memeriksa izin kamera...")
+                Text("Checking camera permissions...")
             }
         }
         .onAppear {
